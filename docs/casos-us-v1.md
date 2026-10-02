@@ -21,8 +21,8 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 | CU-03 | Editar botiga | Botigues | Modificar les dades pròpies d’una botiga. |
 | CU-04 | Eliminar botiga | Botigues | Eliminar una botiga sense llistes associades. |
 | CU-05 | Crear llista de nadó | Llistes de nadó | Crear una llista associada a una botiga. |
-| CU-06 | Consultar llista de nadó | Llistes de nadó | Consultar una llista i els seus Items. |
-| CU-07 | Eliminar llista de nadó | Llistes de nadó | Eliminar una llista sense Items recollits. |
+| CU-06 | Consultar llista de nadó | Llistes de nadó | Consultar una llista, els seus Items i el resum econòmic derivat. |
+| CU-07 | Eliminar llista de nadó | Llistes de nadó | Eliminar una Llista buida o només amb Items demanats sense imports pagats ni regalats. |
 | CU-08 | Crear Item | Items | Registrar una unitat física, amb llista o directament a casa. |
 | CU-09 | Consultar Item | Items | Consultar les dades i l’estat d’un Item. |
 | CU-10 | Editar Item | Items | Modificar les dades pròpies d’un Item. |
@@ -162,7 +162,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 **Actor:** Usuari
 
-**Objectiu:** Consultar una Llista de nadó i la informació dels Items associats.
+**Objectiu:** Consultar una Llista de nadó, la informació dels Items associats i el resum econòmic derivat.
 
 **Precondicions:** La Llista existeix i està associada a una Botiga.
 
@@ -172,15 +172,18 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 2. L’Usuari selecciona una Llista.
 3. El sistema mostra les dades de la Llista.
 4. El sistema permet distingir els Items pendents de recollir dels recollits, ordenats dins de cada conjunt del més recentment creat al més antic, i consultar-ne el context d’adquisició mitjançant CU-09.
+5. El sistema permet consultar el resum econòmic de la Llista segons RF-20a: pendent de pagar per nosaltres, total assumit per nosaltres, valor total dels productes i total regalat. El pendent és la dada principal; el total assumit és secundari rellevant i els altres dos totals són complementaris. La consulta no exigeix una acció específica de calcular.
 
 **Fluxos alternatius / excepcions:**
 
-* Si la Llista no té Items associats, el sistema mostra la Llista sense Items.
+* Si la Llista no té Items associats, el sistema mostra la Llista sense Items i els quatre totals econòmics són zero.
 
 **Regles de negoci relacionades:**
 
 * Una Llista pot existir sense Items associats.
 * Els Items recollits continuen visibles dins de la Llista per conservar-ne la traçabilitat.
+* El resum inclou tots els ITEM_LLISTA actuals de la Llista, recollits i pendents de recollir: `pendent_total = Σ quantitat_pendent`, `total_assumit = Σ quantitat_assumida`, `valor_total_productes = Σ preu_total` i `total_regalat = Σ quantitat_regalada`. S’apliquen les fórmules per Item de RF-27; el total assumit inclou la part pròpia ja pagada i la pendent, i el valor total dels productes inclou també la part regalada.
+* Els totals són derivats, no es persisteixen a LLISTA_NADO i no creen cap entitat de resum ni historial de pagaments.
 
 ### CU-07 — Eliminar llista de nadó
 
@@ -194,20 +197,21 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 1. L’Usuari selecciona una Llista de nadó.
 2. L’Usuari sol·licita eliminar-la.
-3. El sistema comprova si hi ha Items recollits associats a la Llista.
-4. Si no n’hi ha, el sistema explica que s’eliminaran la Llista, els ITEM_LLISTA associats i els Items encara no recollits, i demana confirmació.
-5. Si l’Usuari confirma, el sistema executa aquesta eliminació; si no confirma, no l’executa.
+3. Abans de permetre la confirmació, el sistema comprova que la Llista estigui buida o que tots els Items associats tinguin estat **demanat**, quantitat pagada zero i quantitat regalada zero.
+4. Si es compleix la condició, el sistema explica que s’eliminaran la Llista, tots els ITEM_LLISTA associats i els Items associats, que la Botiga es conservarà, i demana confirmació.
+5. Si l’Usuari confirma, el sistema executa aquesta eliminació com una única operació, sense eliminacions parcials; si no confirma, no elimina res.
 
 **Fluxos alternatius / excepcions:**
 
-* Si la Llista conté algun Item recollit, el sistema no permet eliminar-la.
+* Si algun Item està **encarregat**, **a punt per recollir** o **recollit**, o té quantitat pagada o regalada major que zero, es rebutja tota l’operació sense eliminar res. No s’ofereix la confirmació d’eliminació i s’explica el motiu del bloqueig.
 
 **Regles de negoci relacionades:**
 
 * Un Item recollit també forma part de l’inventari de casa.
 * No s’ha de destruir un Item físic que continua existint només perquè la Llista deixi d’existir.
 * La V1 no incorpora Llistes arxivades ni tancades.
-* Quan s’elimina una Llista de nadó, també s’eliminen els ITEM_LLISTA associats i els Items que encara no han estat recollits.
+* La Llista només es pot eliminar si està buida o si tots els Items associats compleixen simultàniament `estat_comanda = demanat`, `quantitat_pagada = 0` i `quantitat_regalada = 0`. El `preu_total` informat no bloqueja l’eliminació.
+* Quan l’eliminació és permesa i l’Usuari la confirma, s’eliminen la Llista, tots els ITEM_LLISTA associats i els Items associats que en formaven part; la Botiga es conserva. És una única operació conceptual, sense eliminacions parcials.
 
 ### 4.3. Items
 
@@ -225,7 +229,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 2. El sistema sol·licita les dades de l’Item i la seva Subcategoria.
 3. L’Usuari introdueix el nom obligatori, selecciona exactament una Subcategoria predefinida i, opcionalment, aporta una fotografia.
 4. L’Usuari selecciona explícitament exactament una situació inicial, sense valor preseleccionat: **A casa** o **En una llista**.
-5. Si selecciona **En una llista**, l’Usuari selecciona una Llista i indica els estats de comanda i econòmic, obligatoris i sense valors preseleccionats, el preu total obligatori i la quantitat pagada quan correspongui segons RF-26. Si la creació s’ha iniciat des d’una Llista, aquesta ja queda preseleccionada.
+5. Si selecciona **En una llista**, l’Usuari selecciona una Llista i indica l’estat de comanda obligatori i sense valor preseleccionat, i els imports preu total, quantitat regalada i quantitat pagada pròpia segons RF-26. El preu total és obligatori i major que zero; els altres dos imports poden ser zero. No selecciona cap estat econòmic. Si la creació s’ha iniciat des d’una Llista, aquesta ja queda preseleccionada.
 6. L’Usuari confirma la creació.
 7. El sistema valida les dades i crea l’Item, registrant automàticament `data_creacio`, i, si correspon, el seu context ITEM_LLISTA amb les dades d’adquisició. La data de creació és diferent de `data_entrada_casa` i no és editable per l’Usuari.
 8. Si s’ha creat directament **A casa**, la preparació comença com a **no preparada**, sense exigir ni demanar data d’entrada a casa. Si s’ha creat amb context de Llista i comanda **recollit**, el sistema registra automàticament la data actual com a `data_recollida` i la mateixa com a `data_entrada_casa`: l’Item és a casa, conserva ITEM_LLISTA i comença com a **no preparada**, sense introducció manual de dates. Amb qualsevol estat de comanda previ, encara no té data d’entrada a casa i la preparació no és aplicable.
@@ -248,7 +252,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 * Cada Item representa una unitat física individual.
 * El nom compleix RF-01a: ignorant els espais inicials i finals a efectes de validació, no és buit, conté almenys una lletra i no supera 100 caràcters. Admet números i símbols juntament amb lletres i es permeten noms duplicats.
 * La fotografia és opcional, amb un màxim d’una per Item i compatibilitat funcional amb fotografies mòbils, inclosos HEIC/HEIF, segons RF-01b.
-* Les dades econòmiques pertanyen exclusivament a ITEM_LLISTA i compleixen RF-26: **pendent** i **regalat** tenen quantitat pagada zero; **paga i senyal** exigeix `0 < quantitat_pagada < preu_total`; **pagat** té quantitat pagada igual al preu total. El preu total és obligatori en tots quatre casos.
+* Les dades econòmiques pertanyen exclusivament a ITEM_LLISTA i compleixen RF-26: `preu_total > 0`, `quantitat_regalada >= 0`, `quantitat_pagada >= 0` i `quantitat_regalada + quantitat_pagada <= preu_total`. La quantitat regalada correspon a tercers i la pagada només al mateix Usuari. Si els imports no són vàlids, no es crea l’Item ni s’ajusten automàticament: es conserven les dades i es mostren els errors. La quantitat pendent i l’estat econòmic es deriven segons RF-25 i RF-27, sense persistir-los.
 * Un Item pertany a una única Subcategoria.
 * Un Item pot existir sense estar associat a cap Llista i, en V1, pot estar associat com a màxim a una Llista.
 * Un Item no té una relació directa amb RECOMANACIO. La relació conceptual és `ITEM → SUBCATEGORIA ← RECOMANACIO`: l’Item contribueix a la cobertura perquè pertany a la mateixa Subcategoria que la Recomanació.
@@ -273,7 +277,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 2. L’Usuari pot combinar la situació (tots, a casa o pendents de recollir en Llistes), Categoria, Subcategoria i cerca només pel nom, insensible a majúscules/minúscules i actualitzada mentre s’escriu. La Subcategoria depèn de la Categoria; si un canvi de Categoria la fa incompatible, deixa de restringir la consulta. En consultar els pendents de recollir també es pot restringir per Llista. El sistema ordena els resultats del més recentment creat al més antic.
 3. L’Usuari selecciona un Item.
 4. El sistema mostra les dades pròpies de l’Item, excepte la data de creació, la seva situació actual i, només si és a casa, l’estat de preparació. Si prové d’una Llista i és recollit, també permet consultar-ne la data d’entrada a casa i la procedència.
-5. Quan existeix ITEM_LLISTA, l’Usuari pot consultar la informació d’adquisició des del context de la Llista: estat de comanda, situació econòmica, preu total, quantitat pagada, quantitat pendent quan correspongui, data de recollida i informació de la Llista. Continua disponible després de la recollida, sense haver de presentar-la conjuntament amb les dades pròpies de l’Item a casa.
+5. Quan existeix ITEM_LLISTA, l’Usuari pot consultar la informació d’adquisició des del context de la Llista: estat de comanda, estat econòmic derivat, preu total, quantitat regalada, quantitat pagada pròpia, quantitat pendent derivada, data de recollida i informació de la Llista. Continua disponible després de la recollida, sense haver de presentar-la conjuntament amb les dades pròpies de l’Item a casa.
 
 **Fluxos alternatius / excepcions:**
 
@@ -527,23 +531,22 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 1. L’Usuari consulta el context d’adquisició de l’Item dins de la Llista.
 2. L’Usuari inicia l’actualització de la situació econòmica.
-3. L’Usuari indica l’estat econòmic i el preu total, obligatoris. En cas de **paga i senyal**, introdueix també la quantitat pagada; per a **pendent** i **regalat**, el sistema la determina com a zero, i per a **pagat**, com el preu total, sense demanar l’import dues vegades.
+3. L’Usuari modifica els imports acumulats actuals: preu total, quantitat regalada i quantitat pagada pròpia, sense seleccionar cap estat econòmic.
 4. L’Usuari desa els canvis.
-5. El sistema valida les regles econòmiques i actualitza les dades d’ITEM_LLISTA, sense copiar-les a ITEM.
+5. El sistema valida el conjunt final d’imports i, si compleix RF-26, actualitza les dades d’ITEM_LLISTA, sense copiar-les a ITEM; deriva de nou la quantitat pendent i l’estat econòmic.
 
 **Fluxos alternatius / excepcions:**
 
 * Si l’Item no està associat a una Llista, el sistema no permet actualitzar-ne la situació econòmica de llista.
-* Si falta el preu total o l’estat econòmic, o si en **paga i senyal** no es compleix `0 < quantitat_pagada < preu_total`, el sistema no desa els canvis, conserva les dades introduïdes i permet corregir-les.
+* Si falta el preu total o el conjunt final no compleix `preu_total > 0`, `quantitat_regalada >= 0`, `quantitat_pagada >= 0` i `quantitat_regalada + quantitat_pagada <= preu_total`, el sistema no desa els canvis, no ajusta automàticament cap import, conserva les dades introduïdes i mostra els errors perquè l’Usuari els corregeixi.
 
 **Regles de negoci relacionades:**
 
-* Els estats econòmics de la V1 són **pendent**, **regalat**, **paga i senyal** i **pagat**.
-* La situació econòmica és independent de l’estat de comanda.
-* La quantitat pendent és informació derivada: `preu_total - quantitat_pagada` en cas de paga i senyal.
-* **Regalat** no implica necessàriament que el pagament ja s’hagi fet per una altra persona.
-* Un Item pot estar en una Llista com a regal abans d’haver estat adquirit.
-* S’apliquen les regles de RF-26 també després de la recollida: el preu total és obligatori, inclòs **regalat**, i la quantitat pagada correspon a l’estat econòmic.
+* Es registren només els imports acumulats actuals segons RF-26. La quantitat regalada és assumida per tercers, tant si entreguen diners a l’Usuari com si paguen a la Botiga; la quantitat pagada és assumida i ja pagada pel mateix Usuari, sense incloure tercers.
+* La situació econòmica és independent de l’estat de comanda i les regles s’apliquen també després de la recollida. Registrar `quantitat_pagada > 0` o `quantitat_regalada > 0` no canvia automàticament l’estat de comanda a **encarregat** ni a cap altre estat. L’Usuari canvia explícitament la comanda quan l’adquisició ha estat realment encarregada.
+* La quantitat pendent és derivada: `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`. La quantitat assumida es deriva quan calgui: `quantitat_assumida = preu_total - quantitat_regalada`.
+* L’estat econòmic es deriva de la quantitat pendent: **pendent** si és major que zero i **pagat** si és zero, també quan tot el preu és assumit per tercers. No se selecciona ni es persisteix; tampoc no es persisteixen les dues quantitats derivades.
+* No es registra historial de pagaments ni aportacions individuals.
 
 ## 5. Casos que no es documenten de manera independent
 

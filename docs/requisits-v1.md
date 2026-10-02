@@ -32,7 +32,7 @@ En una evolució futura es podria contemplar un usuari amb permisos de consulta,
 - **RF-01a.** El nom de l’Item és obligatori. A efectes de validació, s’ignoren els espais inicials i finals; el resultat no pot quedar buit, ha de contenir almenys una lletra i pot tenir com a màxim 100 caràcters. Pot contenir números i símbols si també conté una lletra. Es permeten noms duplicats per a unitats físiques diferents.
 - **RF-01b.** Cada Item pot tenir com a màxim una fotografia, opcional. La V1 ha de permetre utilitzar fotografies habituals de dispositius mòbils, inclosos HEIC/HEIF d’iPhone i els formats web i fotogràfics habituals.
 - **RF-01c.** En crear un Item, l’Usuari ha de seleccionar explícitament exactament una situació inicial: **A casa** o **En una llista**, sense opció preseleccionada. En el segon cas, la Llista és obligatòria i es registren en la mateixa creació les dades inicials d’ITEM_LLISTA. Iniciar la creació des d’una Llista en preselecciona la Llista, però no substitueix la selecció explícita de situació. Si es canvia a **A casa**, es descarten les dades i el context de Llista que deixen de ser aplicables.
-- **RF-02.** El sistema ha de permetre consultar els Items registrats i, quan existeix ITEM_LLISTA, la informació d’adquisició des del context de la Llista: estat de comanda, situació econòmica, preu total, quantitat pagada, quantitat pendent quan correspongui, data de recollida i procedència. Aquesta informació continua consultable després de recollir l’Item i no es copia a ITEM. El detall principal d’un Item a casa mostra la Llista d’origen i permet navegar-hi si en prové, però no mostra la informació econòmica.
+- **RF-02.** El sistema ha de permetre consultar els Items registrats i, quan existeix ITEM_LLISTA, la informació d’adquisició des del context de la Llista: estat de comanda, situació econòmica, preu total, quantitat regalada, quantitat pagada pròpia, quantitat pendent derivada, data de recollida i procedència. Aquesta informació continua consultable després de recollir l’Item i no es copia a ITEM. El detall principal d’un Item a casa mostra la Llista d’origen i permet navegar-hi si en prové, però no mostra la informació econòmica.
 - **RF-02a.** El sistema ha de permetre combinar la consulta per situació (tots, a casa o pendents de recollir en Llistes), Categoria, Subcategoria i cerca exclusivament pel nom, insensible a majúscules/minúscules i actualitzada mentre s’escriu. La Subcategoria ha de correspondre a la Categoria seleccionada; en canviar de Categoria, una Subcategoria incompatible deixa de restringir la consulta. Per als Items pendents de recollir també es pot restringir per Llista. Els Items a casa inclouen els incorporats directament i els recollits.
 - **RF-02b.** El sistema registra automàticament la data de creació de cada Item, diferent de la data d’entrada a casa i no editable per l’Usuari. Els Items s’ordenen per defecte del més recentment afegit al més antic, també dins dels grups de pendents de recollir i recollits d’una Llista.
 - **RF-03.** El sistema ha de permetre classificar cada Item en una Categoria i una Subcategoria mitjançant la seva Subcategoria.
@@ -75,8 +75,9 @@ Una Recomanació està associada a una Subcategoria. No existeix una relació di
 - **RF-18.** El sistema ha de permetre gestionar Llistes de nadó. El nom és obligatori; a efectes de validació s’ignoren els espais inicials i finals, el resultat no pot quedar buit i té un màxim de 100 caràcters. Es permeten noms duplicats i no s’exigeix que contingui cap lletra. La descripció és opcional.
 - **RF-19.** El sistema ha de permetre associar una Llista de nadó a una Botiga.
 - **RF-20.** El sistema ha de permetre consultar els Items associats a una Llista de nadó determinada.
+- **RF-20a.** El sistema ha de permetre consultar el resum econòmic derivat d’una Llista: **pendent de pagar per nosaltres** com a informació principal, **total assumit per nosaltres** com a informació secundària rellevant, i **valor total dels productes** i **total regalat** com a informació complementària. Els quatre totals es calculen segons §5 a partir dels ITEM_LLISTA actuals; no es persisteixen a LLISTA_NADO ni requereixen una nova entitat. La necessitat és consultar la informació, sense exigir un botó per calcular-la.
 - **RF-21.** El sistema ha de permetre identificar la Botiga i la Llista de procedència d’un Item que hi estigui associat.
-- **RF-21a.** El sistema ha de permetre eliminar una Llista de nadó quan no contingui cap Item recollit associat.
+- **RF-21a.** La Llista només es pot eliminar si està buida o si tots els Items associats compleixen simultàniament `estat_comanda = demanat`, `quantitat_pagada = 0` i `quantitat_regalada = 0`. El `preu_total` informat no bloqueja l’eliminació. Si algun Item està **encarregat**, **a punt per recollir** o **recollit**, o té quantitat pagada o regalada major que zero, es rebutja tota l’operació sense eliminar res.
 - **RF-21b.** El sistema ha de permetre eliminar una Botiga només quan no tingui cap Llista de nadó associada.
 
 Una Llista de nadó sempre està associada a una Botiga. La cardinalitat de la V1 és `BOTIGA 1:0..1 LLISTA_NADO`: una Botiga pot no tenir cap Llista o tenir-ne una única. La possibilitat de múltiples Llistes per Botiga és una evolució futura. Una Llista pot existir sense Items associats.
@@ -90,19 +91,12 @@ La correcció dels estats previs a `recollit` permet resoldre errors de registre
 
 ### 4.6. Gestió de l’estat econòmic
 
-- **RF-24.** El sistema ha de permetre registrar i consultar l’estat econòmic d’un Item de llista.
-- **RF-25.** El sistema ha de permetre registrar els estats econòmics conceptuals: pendent, regalat, paga i senyal i pagat. En crear un Item amb ITEM_LLISTA, l’estat econòmic és obligatori i no té cap valor preseleccionat.
-- **RF-26.** El preu total és obligatori per a qualsevol ITEM_LLISTA, inclòs l’estat **regalat**. La quantitat pagada es determina segons les regles següents, tant en crear com en actualitzar el context d’adquisició.
-- **RF-27.** En cas de paga i senyal, el sistema ha de permetre consultar la quantitat pendent de pagament.
+- **RF-24.** El sistema ha de permetre registrar i consultar els imports acumulats actuals d’un Item de llista: `preu_total`, `quantitat_regalada` i `quantitat_pagada`.
+- **RF-25.** L’estat econòmic es deriva de la quantitat pendent: **pendent** si és major que zero i **pagat** si és zero. No es selecciona manualment ni es persisteix `estat_economic`; **regalat** i **paga i senyal** no són estats econòmics de la V1.
+- **RF-26.** Tant en crear com en editar els imports, s’ha de complir `preu_total > 0`, `quantitat_regalada >= 0`, `quantitat_pagada >= 0` i `quantitat_regalada + quantitat_pagada <= preu_total`. El preu total és obligatori i representa el preu complet de l’Item a la Botiga. La quantitat regalada és la part assumida per tercers, tant si entreguen els diners a l’Usuari com si paguen directament a la Botiga. La quantitat pagada és la part assumida i ja pagada pel mateix Usuari, sense incloure imports de tercers. Totes dues poden ser zero. Si el conjunt final d’imports incompleix aquestes regles, no es desa l’operació, es conserven les dades introduïdes i es mostra l’error perquè l’Usuari les corregeixi. El sistema no ajusta automàticament cap import per fer-lo encaixar.
+- **RF-27.** El sistema ha de permetre consultar la quantitat pendent derivada: `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`. La quantitat assumida es pot derivar quan sigui necessària: `quantitat_assumida = preu_total - quantitat_regalada`. Cap d’aquestes dues quantitats es persisteix.
 
-L’estat **regalat** indica que s’espera que l’Item sigui un regal; no implica necessàriament que una altra persona ja n’hagi fet el pagament ni equival obligatòriament a l’estat **pagat**.
-
-| Estat econòmic | Regla de quantitat pagada |
-| --- | --- |
-| pendent | `quantitat_pagada = 0`, sense introducció manual d’un altre import. |
-| regalat | `quantitat_pagada = 0`; no equival a pagat. |
-| paga i senyal | Introducció obligatòria, amb `0 < quantitat_pagada < preu_total`. La quantitat pendent és `preu_total - quantitat_pagada`. |
-| pagat | `quantitat_pagada = preu_total`, sense demanar dues vegades el mateix import. |
+Si tercers assumeixen tot el preu, la quantitat pagada pròpia pot ser zero i l’estat derivat és **pagat**, perquè la quantitat pendent és zero.
 
 Les dades econòmiques només existeixen en ITEM_LLISTA, no com a dades pròpies d’ITEM, i es conserven després de la recollida.
 
@@ -131,9 +125,16 @@ La informació següent s’ha de calcular a partir de les dades registrades; no
 | Informació | Càlcul |
 | --- | --- |
 | Quantitat actual d’una Subcategoria | Recompte de tots els Items registrats que pertanyen a la Subcategoria, fins i tot si provenen d’una Llista i encara no s’han recollit. Per exemple, amb 3 Bodies a casa i 2 Bodies associats a una Llista, la quantitat actual de Bodies és 5. |
-| Quantitat pendent de pagament | Diferència entre el preu total i la quantitat pagada d’un Item de llista quan es troba en situació de paga i senyal. |
-| Cost total d’una Llista de nadó | Suma dels preus totals dels Items associats a la Llista. |
+| Quantitat pendent de pagament | `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`. |
+| Quantitat assumida | `quantitat_assumida = preu_total - quantitat_regalada`, quan sigui necessària. |
+| Estat econòmic | **pendent** si `quantitat_pendent > 0`; **pagat** si `quantitat_pendent = 0`. |
+| Pendent de pagar per nosaltres | `pendent_total = Σ quantitat_pendent`: import que encara ens queda per pagar dels Items de la Llista. |
+| Total assumit per nosaltres | `total_assumit = Σ quantitat_assumida`: cost que ens correspon, independentment de si ja l’hem pagat. |
+| Valor total dels productes | `valor_total_productes = Σ preu_total`: valor complet dels Items de la Llista, incloses la part pròpia i la regalada. |
+| Total regalat | `total_regalat = Σ quantitat_regalada`: part total assumida per tercers. |
 | Estat de cobertura d’una Recomanació | Comparació entre la quantitat actual registrada i la quantitat recomanada de la Subcategoria, amb l’exclusió de cobertura dels Items de **Pendent de classificar** descrita a §4.3. És informació derivada; en l’exemple de 5 Bodies davant d’una Recomanació de 6, el resultat és «Falten 1». |
+
+Les sumes del resum econòmic inclouen tots els ITEM_LLISTA actuals de la Llista, tant dels Items recollits com dels pendents de recollir. Si la Llista és buida, els quatre totals són zero. No són atributs persistents de LLISTA_NADO ni constitueixen un historial de pagaments.
 
 ## 6. Regles funcionals / de negoci
 
@@ -143,15 +144,15 @@ La informació següent s’ha de calcular a partir de les dades registrades; no
 4. En V1, un Item pot estar associat com a màxim a una Llista de nadó.
 5. Una Llista de nadó sempre està associada a una Botiga i pot contenir zero, un o molts Items mitjançant el seu context d’Item de llista.
 6. En V1, una Botiga pot no tenir cap Llista de nadó o tenir-ne una única; cada Llista pertany a una única Botiga. La possibilitat de múltiples Llistes per Botiga és una evolució futura.
-7. L’estat de comanda, l’estat econòmic i l’estat de preparació són independents.
+7. L’estat de comanda, la informació econòmica i l’estat de preparació són dimensions diferents. Registrar `quantitat_pagada > 0` o `quantitat_regalada > 0` no canvia automàticament l’estat de comanda a **encarregat** ni a cap altre estat. L’Usuari canvia explícitament la comanda quan l’adquisició ha estat realment encarregada.
 8. Un Item recollit continua visible dins de la seva Llista de nadó, conserva el context de la Llista i passa a considerar-se físicament a casa.
 9. Tots els Items registrats contribueixen al recompte de la seva Subcategoria, inclosos els Items a casa i els Items associats a una Llista. Els de **Pendent de classificar** no contribueixen a cap cobertura fins que siguin reclassificats.
 10. Una Recomanació està associada a una Subcategoria; no existeix una relació directa entre ITEM i RECOMANACIO.
 11. Les Recomanacions són orientatives.
 12. La quantitat actual i l’estat de cobertura són dades derivades.
-13. La quantitat pendent de pagament és una dada derivada.
+13. La quantitat pendent, la quantitat assumida i l’estat econòmic són dades derivades; els tres imports registrats compleixen RF-26.
 14. Eliminar un Item no elimina la seva Llista de nadó; un Item associat a una Llista es pot eliminar individualment.
-15. Una Llista de nadó només es pot eliminar si no té cap Item recollit associat. En aquest cas, s’eliminen la Llista, els ITEM_LLISTA associats i els Items no recollits que només existien en el context d’aquella Llista.
+15. S’apliquen les condicions d’eliminació de RF-21a. Quan l’eliminació és permesa i l’Usuari la confirma, s’eliminen la Llista, tots els ITEM_LLISTA associats i els Items associats que en formaven part; la Botiga es conserva. És una única operació conceptual, sense eliminacions parcials.
 16. Una Botiga només es pot eliminar si no té cap Llista de nadó associada.
 
 ## 7. Requisits no funcionals
@@ -176,6 +177,8 @@ No formen part de la V1:
 - funcionalitats comercials;
 - arxivament o tancament de Llistes de nadó;
 - historial de compres;
+- historial de pagaments, aportacions individuals, identitat de qui fa cada regal, dates i mètodes de pagament;
+- importació de llistes de webs externes;
 - altres funcionalitats futures encara no definides.
 
 ## 9. Evolució futura

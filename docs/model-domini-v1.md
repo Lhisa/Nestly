@@ -113,7 +113,7 @@ Representa una llista de nadó d’una Botiga. Agrupa els contexts de llista del
 
 El nom és obligatori; a efectes de validació s’ignoren els espais inicials i finals, el resultat no pot quedar buit i té un màxim de 100 caràcters. Es permeten noms duplicats i no s’exigeix que contingui cap lletra. La descripció és opcional.
 
-Una Llista de nadó pertany a una Botiga i pot contenir zero, un o molts Items a través d’ITEM_LLISTA. Per tant, es pot crear abans d’afegir-hi cap Item. El cost total no és un atribut propi: es pot derivar dels imports dels seus Items vinculats.
+Una Llista de nadó pertany a una Botiga i pot contenir zero, un o molts Items a través d’ITEM_LLISTA. Per tant, es pot crear abans d’afegir-hi cap Item. El pendent de pagar per nosaltres, el total assumit per nosaltres, el valor total dels productes i el total regalat es deriven dels ITEM_LLISTA actuals segons §7. No són atributs persistents de LLISTA_NADO i no introdueixen cap entitat de resum, pagaments o estadístiques.
 
 ### 4.7. ITEM_LLISTA
 
@@ -123,23 +123,28 @@ Representa la participació o el context d’un Item dins d’una Llista de nad�
 | --- | --- |
 | `id_item_llista` | Identificador del context d’Item dins de la llista. |
 | `estat_comanda` | Situació obligatòria de l’adquisició de l’Item. |
-| `estat_economic` | Situació econòmica obligatòria de l’Item dins de la llista. |
 | `data_recollida` | Data en què s’ha recollit l’Item, quan correspon. |
-| `preu_total` | Import total obligatori de l’Item dins de la llista, també si és regalat. |
-| `quantitat_pagada` | Import ja pagat per l’Item dins de la llista. |
+| `preu_total` | Preu complet de l’Item a la Botiga, obligatori i major que zero. |
+| `quantitat_regalada` | Part del preu assumida per tercers, que pot ser zero. Inclou tant diners entregats a l’Usuari com pagaments directes a la Botiga. |
+| `quantitat_pagada` | Part del preu assumida i ja pagada pel mateix Usuari, excloent els imports assumits per tercers. Pot ser zero. |
 
-Els estats conceptuals de comanda són: **demanat**, **encarregat**, **a punt per recollir** i **recollit**. Els estats econòmics són: **pendent**, **regalat**, **paga i senyal** i **pagat**. Els dos estats són independents.
+Els estats conceptuals de comanda són: **demanat**, **encarregat**, **a punt per recollir** i **recollit**. L’estat econòmic és informació derivada dels imports, amb els valors **pendent** o **pagat**, independent de la comanda; no és un atribut persistent ni se selecciona manualment.
 
 Cada ITEM_LLISTA pertany a una única LLISTA_NADO i correspon a un únic ITEM. En crear un Item amb origen de Llista, es crea aquest context amb les dades inicials d’adquisició. La informació econòmica només pertany a ITEM_LLISTA: no es copia a ITEM i continua consultable des del context de la Llista després de la recollida.
 
-La quantitat pagada respecta les regles següents, tant en crear com en actualitzar ITEM_LLISTA:
+Les dades econòmiques persistents són els tres imports acumulats actuals: `preu_total`, `quantitat_regalada` i `quantitat_pagada`. Tant en crear com en editar ITEM_LLISTA, s’ha de complir `preu_total > 0`, `quantitat_regalada >= 0`, `quantitat_pagada >= 0` i `quantitat_regalada + quantitat_pagada <= preu_total`. Si el conjunt final incompleix la invariant, no es desa; l’Usuari ha de corregir les dades, sense ajust automàtic dels imports.
 
-| Estat econòmic | Regla |
-| --- | --- |
-| pendent | `quantitat_pagada = 0`. |
-| regalat | `quantitat_pagada = 0`; significa que s’espera com a regal i no equival a pagat. |
-| paga i senyal | `quantitat_pagada` obligatòria i `0 < quantitat_pagada < preu_total`. |
-| pagat | `quantitat_pagada = preu_total`. |
+Es deriven `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada` i, quan calgui, `quantitat_assumida = preu_total - quantitat_regalada`. L’estat econòmic és **pendent** si la quantitat pendent és major que zero i **pagat** si és zero. Ni aquestes quantitats derivades ni `estat_economic` es persisteixen. **Regalat** i **paga i senyal** no són estats econòmics.
+
+| Preu total | Quantitat regalada | Quantitat pagada pròpia | Quantitat pendent derivada | Estat derivat |
+| --- | --- | --- | --- | --- |
+| 100 | 0 | 0 | 100 | pendent |
+| 100 | 30 | 0 | 70 | pendent |
+| 100 | 30 | 20 | 50 | pendent |
+| 100 | 30 | 70 | 0 | pagat |
+| 100 | 100 | 0 | 0 | pagat |
+
+Un Item assumit íntegrament per tercers està **pagat** perquè queda completament liquidat, encara que la quantitat pagada pròpia sigui zero. No es modelen historial de pagaments, aportacions individuals, identitats de tercers, dates ni mètodes de pagament.
 
 Abans de **recollit**, l’estat de comanda es pot corregir o fer retrocedir entre els estats previs. També es pot corregir **recollit** si s’ha registrat per error. En arribar-hi, es registra automàticament la data actual com a `data_recollida` i la mateixa data com a `data_entrada_casa`, sense introducció manual. L’Item passa a considerar-se físicament a casa i conserva ITEM_LLISTA, la visibilitat dins de la Llista i la traçabilitat. Continua sent el mateix Item i la preparació esdevé aplicable amb valor inicial **no preparada**.
 
@@ -170,17 +175,17 @@ De la mateixa manera, no existeix una relació directa entre ITEM i RECOMANACIO.
 4. En V1, un Item pot estar associat com a màxim a una llista.
 5. Una Llista de nadó pot contenir zero, un o molts Items mitjançant ITEM_LLISTA.
 6. ITEM_LLISTA conté exclusivament la informació específica del context de l’Item dins de la llista.
-7. L’estat de comanda i l’estat econòmic són independents.
+7. L’estat de comanda i la informació econòmica són dimensions diferents. Registrar `quantitat_pagada > 0` o `quantitat_regalada > 0` no canvia automàticament l’estat de comanda a **encarregat** ni a cap altre estat. L’Usuari canvia explícitament la comanda quan l’adquisició ha estat realment encarregada.
 8. Un Item recollit continua sent visible dins de la seva llista i conserva la seva traçabilitat.
 9. Un Item recollit passa a considerar-se físicament a casa.
 10. En recollir un Item de Llista, també en crear-lo inicialment com a recollit, es registren automàticament les dates coincidents de recollida i entrada a casa segons §4.7. Un Item creat directament a casa no necessita aquesta data.
 11. Tots els Items registrats contribueixen al recompte actual de la seva Subcategoria, independentment de si ja han estat recollits o es troben pendents de recollida dins d’una llista. Els de **Pendent de classificar** queden exclosos de qualsevol cobertura fins que siguin reclassificats, segons §4.4.
 12. Una Recomanació continua existint encara que ja estigui coberta.
 13. La quantitat actual no es persisteix dins de RECOMANACIO; és informació derivada.
-14. La quantitat pendent de pagament és informació derivada. En el cas de paga i senyal, és `preu_total - quantitat_pagada`.
-15. El cost total d’una Llista de nadó és derivable a partir dels imports dels Items associats mitjançant ITEM_LLISTA.
-16. Una Llista de nadó no es pot eliminar si conté Items recollits que ja formen part de l’inventari de casa; s’ha de conservar mentre sigui necessària per preservar-ne la traçabilitat.
-17. Una Llista de nadó no es pot eliminar si conté algun Item recollit. Quan l’eliminació és permesa, s’eliminen la Llista, els ITEM_LLISTA associats i els Items encara no recollits associats a aquella Llista.
+14. La quantitat pendent, la quantitat assumida i l’estat econòmic són informació derivada dels tres imports d’ITEM_LLISTA, que han de complir la invariant de §4.7.
+15. El pendent de pagar per nosaltres, el total assumit per nosaltres, el valor total dels productes i el total regalat d’una Llista es calculen a partir dels ITEM_LLISTA actuals segons §7, sense persistir-los.
+16. La Llista només es pot eliminar si està buida o si tots els Items associats compleixen simultàniament `estat_comanda = demanat`, `quantitat_pagada = 0` i `quantitat_regalada = 0`. El `preu_total` informat no bloqueja l’eliminació. Si algun Item està **encarregat**, **a punt per recollir** o **recollit**, o té quantitat pagada o regalada major que zero, es rebutja tota l’operació sense eliminar res.
+17. Quan l’eliminació és permesa i l’Usuari la confirma, s’eliminen la Llista, tots els ITEM_LLISTA associats i els Items associats que en formaven part; la Botiga es conserva. És una única operació conceptual, sense eliminacions parcials.
 18. L’estat de comanda descriu l’adquisició; l’estat de preparació només és aplicable a casa i descriu si l’objecte està no preparada o preparada per ser utilitzat, segons §4.3. Són conceptes independents.
 19. Una Subcategoria pot existir sense cap Item associat.
 20. En la V1, una Botiga pot existir sense cap Llista de nadó o tenir-ne una única; cada Llista pertany a una única Botiga.
@@ -193,9 +198,16 @@ La informació següent es calcula a partir de dades del model i no es persistei
 | --- | --- |
 | Quantitat actual | Recompte de tots els Items registrats que pertanyen a una Subcategoria. En V1, tot Item registrat es considera part de la quantitat prevista, encara que provingui d’una llista i encara no s’hagi recollit. |
 | Desglossament per situació | Recompte d’Items a casa (directes i recollits) i en llistes (encara pendents de recollir) dins de la Subcategoria; s’aplica la mateixa exclusió de cobertura de §4.4. |
-| Quantitat pendent de pagament | `preu_total - quantitat_pagada` quan l’estat econòmic és paga i senyal. |
+| Quantitat pendent de pagament | `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`. |
+| Quantitat assumida | `quantitat_assumida = preu_total - quantitat_regalada`, quan sigui necessària. |
+| Estat econòmic | **pendent** si `quantitat_pendent > 0`; **pagat** si `quantitat_pendent = 0`. |
 | Estat de cobertura de la Recomanació | Comparació entre la quantitat actual d’Items de la Subcategoria i `quantitat_recomanada`, respectant l’exclusió de cobertura de **Pendent de classificar** (§4.4). Per exemple, si la Recomanació de Bodies és 6 i hi ha 3 Bodies a casa i 2 associats a llistes, la quantitat actual és 5. Pot mostrar missatges com «Falten X», «Recomanació coberta» o «Ja en tens X». |
-| Cost total de la Llista de nadó | Suma dels `preu_total` dels contexts ITEM_LLISTA que formen part de la Llista. |
+| Pendent de pagar per nosaltres | `pendent_total = Σ quantitat_pendent`, amb `quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`. |
+| Total assumit per nosaltres | `total_assumit = Σ quantitat_assumida`, amb `quantitat_assumida = preu_total - quantitat_regalada`. Inclou la part pròpia ja pagada i la pendent. |
+| Valor total dels productes | `valor_total_productes = Σ preu_total`. Inclou tant la part assumida per nosaltres com la part regalada. |
+| Total regalat | `total_regalat = Σ quantitat_regalada`. Representa la part total assumida per tercers. |
+
+Les quatre sumes es fan sobre tots els ITEM_LLISTA actuals de la Llista, inclosos els dels Items recollits, i són zero si no n’hi ha cap. No es guarden com a atributs de LLISTA_NADO. El resum reflecteix els imports actuals, sense historial de pagaments.
 
 ## 8. Decisions de modelatge
 
@@ -209,13 +221,13 @@ ITEM_LLISTA separa l’objecte físic del seu context dins d’una llista. Les d
 
 ### 8.3. Separació dels estats
 
-L’estat de comanda i l’estat econòmic descriuen dimensions diferents. Per exemple, un Item pot estar **encarregat** i tenir l’estat econòmic **paga i senyal**: el procés d’adquisició ha avançat, però encara queda una part per pagar. Per aquest motiu, un únic estat no representaria correctament totes dues situacions.
+L’estat de comanda i l’estat econòmic descriuen dimensions diferents. Per exemple, un Item pot estar **encarregat** i tenir l’estat econòmic derivat **pendent**: el procés d’adquisició ha avançat, però encara queda una part per pagar. Per aquest motiu, un únic estat no representaria correctament totes dues situacions. Un Item **demanat** amb `quantitat_regalada = 200` i `quantitat_pagada = 0` és vàlid si respecta la invariant econòmica, però bloqueja l’eliminació de la Llista. Un Item **demanat** amb `preu_total = 800` i tots dos imports a zero no la bloqueja. Un Item **encarregat** amb tots dos imports a zero sí que la bloqueja, perquè l’adquisició ja està en curs. Cap d’aquests imports modifica automàticament la comanda.
 
 L’estat de preparació és una tercera dimensió, també independent, aplicable només als Items físicament a casa. Indica si l’objecte està **no preparada** o **preparada** per ser utilitzat; no forma part del procés de comanda. La recollida registra automàticament l’entrada a casa i fa aplicable la preparació amb valor inicial **no preparada**, però no implica que l’objecte estigui preparat.
 
 ### 8.4. Informació derivada
 
-La quantitat actual, la quantitat pendent de pagament, la cobertura de la Recomanació i el cost total d’una Llista es poden obtenir a partir de dades ja existents. No persistir-les evita haver de mantenir-les sincronitzades cada vegada que canvia un Item, un pagament o una recomanació.
+La quantitat actual, la quantitat pendent de pagament, la quantitat assumida, l’estat econòmic, la cobertura de la Recomanació i els quatre totals del resum econòmic de la Llista definits a §7 es poden obtenir a partir de dades ja existents. No persistir-les evita haver de mantenir-les sincronitzades cada vegada que canvia un Item, els seus imports o una recomanació.
 
 ### 8.5. Absència de relacions redundants
 

@@ -108,16 +108,27 @@ Mostra la informació de la Llista, la Botiga associada i els Items associats, a
 - nom;
 - Categoria/Subcategoria;
 - estat de comanda;
-- estat econòmic;
+- estat econòmic derivat (**Pendent** o **Pagat**);
 - acció o enllaç al detall.
 
-El resum no inclou el desglossament complet de preu i pagaments. L’agrupació en pendents i recollits és visual i no representa entitats noves.
+El resum de cada targeta d’Item no inclou el desglossament complet de preu i pagaments. L’agrupació en pendents i recollits és visual i no representa entitats noves.
+
+El detall de Llista permet consultar també el resum econòmic global, segons RF-20a i CU-06, amb aquesta jerarquia conceptual:
+
+| Magnitud | Càlcul derivat | Prioritat i significat |
+| --- | --- | --- |
+| Pendent de pagar per nosaltres | `pendent_total = Σ quantitat_pendent` | Informació principal: import que encara ens queda per pagar. |
+| Total assumit per nosaltres | `total_assumit = Σ quantitat_assumida` | Informació secundària rellevant: cost que ens correspon, tant si ja l’hem pagat com si encara és pendent. |
+| Valor total dels productes | `valor_total_productes = Σ preu_total` | Informació complementària: valor complet dels Items, incloses la part pròpia i la regalada. |
+| Total regalat | `total_regalat = Σ quantitat_regalada` | Informació complementària: part total assumida per tercers. |
+
+S’apliquen les fórmules per Item de §3.6. Els totals inclouen tots els ITEM_LLISTA actuals de la Llista, tant recollits com pendents de recollir; si és buida, tots quatre són zero. Són informació de consulta derivada, sense camps editables ni persistència a LLISTA_NADO. La consulta no exigeix prémer un botó per calcular. El component visual concret, les animacions, els desplegables i altres detalls high-fi no es decideixen aquí.
 
 En seleccionar un Item, l’Usuari accedeix al seu detall. Des d’aquesta pantalla també es pot iniciar l’acció d’afegir un Item, reutilitzant el procés general de creació amb la Llista preseleccionada.
 
-Des del context de la Llista/ITEM_LLISTA es pot consultar la informació d’adquisició de cada Item, inclosos els recollits: estat de comanda, situació econòmica, preu total, quantitat pagada, quantitat pendent quan correspongui i data de recollida. Aquesta consulta conserva la traçabilitat sense afegir una pantalla d’historial ni duplicar les dades a ITEM. La informació econòmica completa es consulta al detall/context d’adquisició de l’Item, accessible des de la Llista també per als recollits; no s’afegeix al detall principal de l’Item a casa.
+Des del context de la Llista/ITEM_LLISTA es pot consultar la informació d’adquisició de cada Item, inclosos els recollits: estat de comanda, estat econòmic derivat, preu total, quantitat regalada, quantitat pagada pròpia, quantitat pendent derivada i data de recollida. Aquesta consulta conserva la traçabilitat sense afegir una pantalla d’historial ni duplicar les dades a ITEM. La informació econòmica completa es consulta al detall/context d’adquisició de l’Item, accessible des de la Llista també per als recollits; no s’afegeix al detall principal de l’Item a casa.
 
-L’eliminació de la Llista ha de respectar les regles de negoci existents: no és possible si conté algun Item recollit associat.
+La Llista es pot eliminar si està buida o si tots els seus Items estan **demanats**, sense cap quantitat pagada ni regalada registrada. El preu informat no impedeix eliminar-la. Si algun Item ja està **encarregat**, **a punt per recollir** o **recollit**, o té imports pagats o regalats, es bloqueja tota l’eliminació segons §4.5.
 
 ### 3.5. Recomanacions
 
@@ -184,16 +195,19 @@ Si es canvia d’**En una llista** a **A casa**, es descarten les dades i el con
 
 #### Dades inicials d’adquisició i formulari econòmic
 
-Per crear un Item **En una llista**, són obligatoris la Llista, l’estat de comanda, l’estat econòmic i el preu total. Els estats no tenen cap valor preseleccionat. La comanda permet **demanat**, **encarregat**, **a punt per recollir** i **recollit**; l’estat econòmic permet **pendent**, **regalat**, **paga i senyal** i **pagat**.
+Per crear un Item **En una llista**, són obligatoris la Llista, l’estat de comanda i el preu total. La comanda no té valor preseleccionat i permet **demanat**, **encarregat**, **a punt per recollir** i **recollit**. No hi ha selector d’estat econòmic. Registrar imports pagats o regalats no canvia automàticament l’estat de comanda; l’Usuari el modifica explícitament quan s’ha fet l’encàrrec.
 
-El preu total es demana sempre, també per a **regalat**. Tant en crear com en actualitzar la situació econòmica, la quantitat pagada es tracta així:
+Tant en crear com en actualitzar la informació econòmica mitjançant CU-19, el formulari permet introduir els tres imports:
 
-| Estat econòmic | Camps i informació condicionals |
+| Camp | Significat i validació |
 | --- | --- |
-| pendent | Quantitat pagada zero, sense demanar un altre import. |
-| regalat | Quantitat pagada zero; indica que s’espera com a regal, no que estigui pagat. |
-| paga i senyal | Quantitat pagada obligatòria, amb `0 < quantitat_pagada < preu_total`. Es mostra la quantitat pendent derivada de la diferència. |
-| pagat | Quantitat pagada igual al preu total, sense tornar a demanar el mateix import. |
+| Preu total | Preu complet de l’Item a la Botiga, obligatori i major que zero. |
+| Quantitat regalada | Part assumida per tercers, tant si entreguen diners a l’Usuari com si paguen directament a la Botiga. Ha de ser major o igual que zero. |
+| Quantitat pagada | Part assumida i ja pagada pel mateix Usuari, sense incloure imports de tercers. Ha de ser major o igual que zero. |
+
+S’ha de complir `quantitat_regalada + quantitat_pagada <= preu_total`. Es mostra la quantitat pendent derivada (`quantitat_pendent = preu_total - quantitat_regalada - quantitat_pagada`) i l’estat **Pendent** si és major que zero o **Pagat** si és zero, sense permetre editar-los. Un regal que cobreix tot el preu dona **Pagat**, encara que la quantitat pagada pròpia sigui zero. La quantitat assumida, si és necessària, es deriva com `preu_total - quantitat_regalada`; no és un camp d’entrada.
+
+S’apliquen les validacions *inline* i en desar de §4.2. Si el conjunt final d’imports és invàlid, no es desa i es conserven totes les dades perquè l’Usuari les corregeixi; el sistema no reajusta cap quantitat automàticament. Els errors generals mantenen el comportament persistent de §4.5. Es conserva l’estructura del formulari i el bloc d’adquisició només apareix quan correspon.
 
 Aquestes dades corresponen a ITEM_LLISTA. Mentre l’Item encara no és físicament a casa, no es mostra preparació ni té data d’entrada a casa.
 
@@ -215,14 +229,15 @@ Quan l’Item està associat a una Llista i encara no ha estat recollit, el deta
 
 - Llista;
 - estat de comanda;
-- situació econòmica;
+- estat econòmic derivat (**Pendent** o **Pagat**);
 - preu total;
-- quantitat pagada;
-- quantitat pendent, quan correspongui.
+- quantitat regalada;
+- quantitat pagada pròpia;
+- quantitat pendent derivada.
 
 En aquest context permet actualitzar l’estat de comanda, actualitzar la situació econòmica, editar l’Item i eliminar-lo. No mostra l’estat de preparació mentre l’Item encara no és físicament a casa.
 
-Quan l’Item ja és a casa, el detall se centra en la preparació. Mostra l’estat de preparació (`preparada` / `no preparada`) i la data d’entrada a casa quan l’Item prové d’una Llista i ha estat recollit. En aquest context no es mostren el preu, la quantitat pagada, la quantitat pendent ni la situació econòmica: aquesta informació continua pertanyent al context de la Llista i l’adquisició.
+Quan l’Item ja és a casa, el detall se centra en la preparació. Mostra l’estat de preparació (`preparada` / `no preparada`) i la data d’entrada a casa quan l’Item prové d’una Llista i ha estat recollit. En aquest context no es mostren el preu, la quantitat regalada, la quantitat pagada, la quantitat assumida, la quantitat pendent ni la situació econòmica: aquesta informació continua pertanyent al context de la Llista i l’adquisició.
 
 Si l’Item a casa prové d’una Llista, el detall manté visible el nom de la Llista d’origen i permet navegar al detall d’aquesta Llista. La procedència té un paper secundari respecte a les dades principals de l’Item i la seva preparació. L’Item continua associat a la Llista per preservar-ne la traçabilitat. En aquest context es permet marcar l’Item com a preparat, editar-lo i eliminar-lo. Si prové d’una Llista i és **recollit**, també es pot accedir a corregir l’estat de comanda, sense fer editables les dates ni mostrar informació econòmica al detall principal de casa.
 
@@ -291,7 +306,9 @@ La cerca i els tabs de situació dels Items són sempre visibles. Categoria, Sub
 
 ### 4.5. Eliminacions i feedback
 
-Totes les eliminacions d’entitats requereixen confirmació. Quan hi ha conseqüències addicionals, el missatge les explica: en eliminar una Llista permesa, s’eliminen també els ITEM_LLISTA i els Items no recollits associats. Si conté algun Item recollit, l’eliminació continua prohibida.
+Totes les eliminacions d’entitats requereixen confirmació. En una Llista, primer es comprova la condició de §3.4. Si està bloquejada, no s’ofereix la confirmació ni s’elimina res. El missatge explica el motiu en llenguatge natural: «No es pot eliminar aquesta Llista perquè conté Items amb una adquisició ja iniciada o amb imports pagats o regalats registrats».
+
+Si l’eliminació és permesa, abans de confirmar s’explica que s’eliminaran la Llista i tots els seus Items amb la informació d’adquisició associada, i que la Botiga es conservarà. L’eliminació de la Llista, els Items i els ITEM_LLISTA és una única operació conceptual; no s’eliminen només els Items que compleixen la condició.
 
 Una operació correcta mostra feedback temporal no bloquejant de tipus *toast*. Els diàlegs de confirmació serveixen per prendre decisions abans d’una acció, no per comunicar-ne l’èxit posterior. Un error general d’operació mostra un missatge persistent a pantalla fins que es resolgui o es reintenti; no desapareix com un toast. Els errors de validació es mostren *inline* al camp. En tots els errors de formulari es mantenen les dades introduïdes.
 
@@ -312,7 +329,7 @@ Després de l’operació correcta es mostra el feedback temporal corresponent.
 - La creació d’Item és un únic procés conceptual; iniciar-la des d’una Llista només en preselecciona el context.
 - El detall d’Item és únic i adapta la informació i les accions a si l’Item està en una Llista o ja és a casa.
 - La informació d’adquisició es prioritza mentre l’Item és en una Llista; la preparació es prioritza quan l’Item és a casa.
-- El detall d’un Item a casa procedent d’una Llista mostra la Llista d’origen amb un enllaç al seu detall, com a informació secundària. No mostra preu, quantitat pagada, quantitat pendent ni situació econòmica.
+- El detall d’un Item a casa procedent d’una Llista mostra la Llista d’origen amb un enllaç al seu detall, com a informació secundària. No mostra preu, quantitat regalada, quantitat pagada, quantitat assumida, quantitat pendent ni situació econòmica.
 - En passar a `recollit`, les dates de recollida i entrada a casa es registren automàticament amb la mateixa data actual, sense introducció manual. L’Item passa a considerar-se físicament a casa i l’estat de preparació esdevé aplicable amb valor inicial `no preparada`; no queda automàticament `preparada`.
 - La interfície permet corregir els estats de comanda, inclòs un `recollit` erroni cap a un estat previ seleccionat explícitament. Aquesta correcció desfà les dates, la situació a casa i l’aplicabilitat de la preparació, conservant l’Item i el context de Llista, segons §3.6.
 - No es crea cap relació visual o funcional directa entre Item i Recomanació: la cobertura depèn de la Subcategoria compartida.
@@ -323,7 +340,7 @@ Després de l’operació correcta es mostra el feedback temporal corresponent.
 | Àrea o pantalla | Accions relacionades | Casos d’ús existents |
 | --- | --- | --- |
 | Botigues | Crear, consultar, editar i eliminar Botiga | CU-01, CU-02, CU-03, CU-04 |
-| Llistes | Crear, consultar i eliminar Llista | CU-05, CU-06, CU-07 |
+| Llistes | Crear, consultar la Llista i el resum econòmic derivat, i eliminar Llista | CU-05, CU-06, CU-07 |
 | Items | Crear, consultar, editar, eliminar i marcar com a preparat | CU-08, CU-09, CU-10, CU-11, CU-12 |
 | Recomanacions | Crear, consultar, editar, eliminar i consultar cobertura | CU-13, CU-14, CU-15, CU-16, CU-17 |
 | Context d’adquisició de l’Item en una Llista | Consultar adquisició, actualitzar estat de comanda i situació econòmica | CU-09, CU-18, CU-19 |
@@ -347,8 +364,8 @@ La revisió dels PDFs distingeix **A — conceptualment vàlid**, **B — retoc*
 | [G03 · Guia de revisió i fluxos](<./wireframes_low_fi/G03 · Guia de revisió i fluxos.pdf>) | Presenta convencions com a propostes pendents i resumeix «Desar → detall» sense distingir la creació des de Llista. Cal reflectir navegació responsive, retorn contextual i sortida amb canvis: D24–D26, D37–D40, D42. |
 | [G04 · Decisions pendents i coherència documental](<./wireframes_low_fi/G04 · Decisions pendents i coherència documental.pdf>) | Manté filtres, fotografia, cobertura textual, confirmacions, estats buits i responsive com a pendents o propostes. Les quatre qüestions funcionals han quedat resoltes; només continuen diferides les decisions visuals i tècniques de §9. Referències: D01–D11, D15–D17, D24–D30. |
 | [I01 · Items](<./wireframes_low_fi/I01 · Items.pdf>) | Utilitza un selector de situació, sense cerca ni filtre de Llista, i les targetes no mostren preparació o comanda. Cal incorporar tabs, consulta combinada i ordenació, estats contextuals i distribució responsive: D01–D08, D27–D31, D41. La distinció entre Items a casa i pendents de recollir ja és correcta. |
-| [I02 · Crear Item](<./wireframes_low_fi/I02 · Crear Item.pdf>) i [I03 · Crear Item des d’una Llista](<./wireframes_low_fi/I03 · Crear Item · des d’una Llista.pdf>) | No representen el bloc complet d’adquisició ni els camps econòmics condicionals. Cal completar fotografia, seccions, validació, accions i retorn: D15–D16, D32–D38, D42. A més, I03 dibuixa la situació de Llista seleccionada: segons §3.6 i CU-08, només la Llista queda preseleccionada i la situació requereix una tria explícita. |
-| [L03 · Detall de Llista](<./wireframes_low_fi/L03 · Detall de Llista.pdf>) | Les targetes ja inclouen fotografia, nom, classificació, comanda i accés al detall, però falta l’estat econòmic. No hi ha els dos grups visuals ni s’explicita l’ordre per creació: D12–D14. La restricció d’eliminació amb Items recollits ja està representada. |
+| [I02 · Crear Item](<./wireframes_low_fi/I02 · Crear Item.pdf>) i [I03 · Crear Item des d’una Llista](<./wireframes_low_fi/I03 · Crear Item · des d’una Llista.pdf>) | No representen el bloc complet d’adquisició ni els tres imports del model econòmic actual de §3.6. Cal completar fotografia, seccions, validació, accions i retorn: D15–D16, D32–D38, D42. A més, I03 dibuixa la situació de Llista seleccionada: segons §3.6 i CU-08, només la Llista queda preseleccionada i la situació requereix una tria explícita. |
+| [L03 · Detall de Llista](<./wireframes_low_fi/L03 · Detall de Llista.pdf>) | Les targetes ja inclouen fotografia, nom, classificació, comanda i accés al detall, però falta l’estat econòmic derivat. No hi ha els dos grups visuals ni s’explicita l’ordre per creació: D12–D14. El PDF representa el bloqueig amb Items recollits, però cal ampliar-lo als altres motius de bloqueig de §3.4 i §4.5. |
 | [R01 · Recomanacions](<./wireframes_low_fi/R01 · Recomanacions.pdf>) | Les targetes de cobertura són textuals i alternen Categories sense agrupar-les. Cal representar barra, recompte, desglossament i excés neutral, agrupats per Categoria → Subcategoria: D17–D19, D21, D23. |
 | [R07 · Cobertura · variants de consulta](<./wireframes_low_fi/R07 · Cobertura · variants de consulta.pdf>) | L’anotació descarta explícitament la barra i no apareix el desglossament per situació. Cal substituir aquesta proposta per barra plena en l’excés, valor numèric i text neutral: D17–D19, D21. |
 
@@ -356,9 +373,9 @@ Els retocs transversals afecten la navegació superior dels PDFs de pantalla, qu
 
 Retocs específics amb traçabilitat útil:
 
-- **B07, I10, L07 i R06:** les confirmacions ja estan dibuixades; les anotacions que encara les tracten com a propostes s’han de llegir segons D09. El feedback posterior és un toast (D10), amb retorn i missatge d’eliminació d’Item segons D39.
+- **B07, I10, L07 i R06:** les confirmacions ja estan dibuixades; les anotacions que encara les tracten com a propostes s’han de llegir segons D09. El feedback posterior és un toast (D10), amb retorn i missatge d’eliminació d’Item segons D39. A L07, la condició històrica basada només en la recollida queda substituïda per §4.5: també bloquegen l’adquisició iniciada i els imports pagats o regalats. El PDF es conserva sense modificar.
 - **I07:** completar previsualització/eliminació de fotografia i feedback d’edició (D15–D16, D38); les dates no són editables manualment; la recollida errònia es corregeix mitjançant l’estat de comanda, segons §3.6.
-- **I09:** el cas de paga i senyal representat és coherent; l’anotació de camps i validacions pendents queda superada per les regles condicionals de §3.6 i D32.
+- **I04 i I09:** la representació econòmica històrica queda superada pel model de §3.6: tres imports acumulats, inclosa la quantitat regalada, pendent calculat restant tots dos imports i estat derivat. I09 ja no ha d’oferir un selector de situació econòmica; aquesta actualització substitueix la part econòmica de D32. Els PDFs es conserven sense modificar.
 - **I11–I13:** feedback temporal de preparació, reinici complet de la consulta sense resultats i comportament d’errors/validació (D08, D10–D11, D35–D36). I13, L02 i L06 també s’han de contrastar amb els fluxos secundaris ja validats de §4.1, amb retorn i conservació de dades.
 - **R03:** afegir barra i desglossament al detall de cobertura (D17–D19); R05 ja representa l’estat buit amb creació de Recomanació (D22).
 - **I05 i I11** ja mostren la Llista d’origen; **I08** ja indica dates automàtiques coincidents. A I08, l’anotació que impedeix tornar enrere des de recollit ha quedat superada per la correcció explícita amb reversió de les conseqüències de recollida; §3.6 i CU-18 són la referència. A I06, la data d’entrada directa ja no és una qüestió oberta: no es demana, segons §3.6.
