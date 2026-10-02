@@ -2,11 +2,11 @@
 
 ## 1. Objectiu i abast
 
-Aquest document recull les decisions arquitectòniques validades A01–A09 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat i gestió de fotografies dels Items. No és una implementació ni un esquema SQL executable.
+Aquest document recull les decisions arquitectòniques validades A01–A10 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat, gestió de fotografies dels Items i arquitectura frontend. No és una implementació ni un esquema SQL executable.
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Les decisions d’A10–A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §11.
+Les decisions d’A11–A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §12.
 
 ## 2. A01 — Arquitectura general
 
@@ -24,7 +24,7 @@ Es prioritza una solució simple per a una aplicació personal. No s’introduei
 
 El frontend utilitza **React i TypeScript**. El backend també utilitza **TypeScript**. Compartir el llenguatge redueix la complexitat tecnològica de la V1 i facilita l’aprenentatge i el manteniment.
 
-Aquesta decisió no fixa encara l’arquitectura detallada del frontend.
+Aquesta decisió de llenguatge i tecnologia es concreta per al frontend a A10 (§11).
 
 ## 4. A03 — Backend
 
@@ -370,11 +370,93 @@ Si PostgreSQL ha eliminat correctament l’Item però falla la neteja del filesy
 
 Una abstracció petita pot mantenir Application independent del filesystem concret. No es creen jerarquies complexes de storage providers, factories o adapters sense necessitat. Les transaccions PostgreSQL d’A08 conserven el seu abast; les operacions de filesystem es coordinen amb les compensacions descrites, sense convertir-les en una transacció ACID conjunta.
 
-## 11. Decisions obertes fora d’A01–A09
+## 11. A10 — Arquitectura frontend
 
-A08 i A09 queden resolts al nivell arquitectònic descrit a §9–§10. Continuen pendents:
+### 11.1. Stack i dependències adoptades
 
-- A10 — arquitectura detallada del frontend;
+Es mantenen **React i TypeScript** d’A02. S’adopten tres dependències per responsabilitats concretes:
+
+| Dependència | Responsabilitat |
+| --- | --- |
+| React Router | Routing i navegació. |
+| TanStack Query | Gestió del server state: cache, càrrega, errors, refetch i invalidació després de mutations. |
+| React Hook Form | Estat i UX dels formularis. |
+
+Responen a necessitats actuals de Nestly, no a un stack predefinit. No s’afegeixen Redux, Zustand, Zod ni altres llibreries sense una necessitat que les justifiqui.
+
+### 11.2. Criteri transversal d’adopció de dependències
+
+Una dependència externa només s’incorpora si resol una necessitat real, és proporcional a l’abast de Nestly, està activament mantinguda, disposa de documentació actual i suficient i és compatible amb l’stack. La complexitat que elimina ha de justificar la dependència i complexitat que introdueix.
+
+La popularitat, per si sola, no és una justificació. S’evita tant reinventar infraestructura ben resolta per una dependència madura com instal·lar dependències per a problemes trivials.
+
+### 11.3. Tipus d’estat
+
+| Tipus | Contingut i ubicació |
+| --- | --- |
+| Server state | Items, Llistes, Botigues, Recomanacions, Categories i Subcategories procedents del backend. TanStack Query en gestiona la còpia/cache; el backend/PostgreSQL continua sent la font de veritat, no la cache del navegador. |
+| Estat de navegació | Els criteris de la vista consultable d’Items —cerca, situació, Categoria, Subcategoria i Llista quan correspon— es representen a la URL amb query parameters. Permeten conservar la vista en anar al detall i tornar, i reconstruir-la després d’una recàrrega. |
+| Estat temporal de UI | Estat visual o efímer, com un bottom sheet de filtres o un diàleg de confirmació obert/tancat. Es manté local als components sempre que sigui possible. |
+
+L’estat viu tan a prop com sigui possible dels components que el necessiten, però prou amunt per compartir-lo quan cal. No s’introdueix estat global general sense una necessitat real.
+
+### 11.4. Routing i consulta d’Items
+
+React Router gestiona la navegació. Les rutes de recursos utilitzen l’ID persistent, no la posició dins d’una llista: `/items/27` identifica l’Item amb ID 27. Una URL com `/items?search=body&situation=home&category=...` il·lustra l’estat de consulta; no fixa exhaustivament les rutes ni els noms finals dels paràmetres.
+
+La URL representa la consulta desitjada per l’Usuari. El backend filtra les dades, sense necessitat de carregar tots els Items per filtrar-los exclusivament al navegador:
+
+```text
+URL frontend → React/TanStack Query → GET /api/items?...criteris...
+→ Backend → Infrastructure/PostgreSQL → resultats filtrats
+```
+
+El backend coordina la consulta segons A05; això no trasllada les regles de negoci al SQL. No s’introdueix paginació sense un requisit actual.
+
+Es mantenen els criteris i la interacció de UI/UX §3.6 i §4.4: cerca mentre s’escriu i aplicació explícita dels filtres secundaris mòbils amb **Aplicar**. La selecció temporal del bottom sheet es diferencia de la consulta aplicada representada a la URL. Els valors inicials de UI/UX corresponen a una consulta sense criteris; no substitueixen els criteris recuperats d’una URL existent.
+
+### 11.5. Formularis i validació
+
+React Hook Form gestiona els camps condicionals, la validació en blur i completa en Crear/Desar, els errors per camp i el dirty state que permet confirmar abans de descartar canvis. Si el backend retorna `fieldErrors`, s’integren als camps corresponents, respectant els errors inline, la conservació de dades i el focus al primer camp invàlid de UI/UX §4.2.
+
+La validació frontend serveix a la UX i no substitueix l’autoritat del backend definida a A08. React Hook Form no converteix el frontend en el responsable de les regles de negoci.
+
+No s’adopta Zod: no s’ha identificat prou necessitat per afegir una altra representació o esquema de validació amb risc de duplicar regles entre frontend, backend, Domain i BD. Es podrà revisar si apareix una necessitat concreta.
+
+### 11.6. Estat temporal del flux Item → Llista → Botiga
+
+El flux `Crear Item → Crear Llista → Crear Botiga → Crear Llista → Crear Item` conserva els valors dels formularis pare i selecciona les entitats acabades de crear, segons RF-33 i UI/UX §4.1.
+
+S’utilitza estat temporal compartit i acotat al flux de creació, mitjançant un Context/provider específic o mecanisme equivalent de React. Només existeix mentre el flux està actiu i s’elimina quan aquest finalitza o l’Usuari en descarta els canvis. No es crea un context global general de Nestly.
+
+Aquest estat no és un draft persistent: no s’utilitzen PostgreSQL per a formularis incomplets, localStorage com a sistema de drafts ni autosave.
+
+Es manté A08: Botiga, Llista i Item no formen una transacció global. Les entitats creades correctament continuen existint encara que després es cancel·li la creació de l’Item; eliminar l’estat temporal del flux no elimina aquestes entitats.
+
+### 11.7. Organització per funcionalitats
+
+El frontend s’organitza principalment per features, com `items`, `lists`, `stores` i `recommendations`. No replica automàticament les taules PostgreSQL, les capes del backend ni una estructura global per tipus tècnic.
+
+Els components específics romanen a la seva feature encara que siguin visuals. Per exemple, `ItemCard`, `ItemForm` o `PriceSummary` poden pertànyer a Items si representen conceptes específics d’aquesta funcionalitat. ITEM_LLISTA no obliga a crear una feature `item-llista`: l’organització segueix les funcionalitats de l’Usuari, no l’esquema físic.
+
+Els components realment genèrics i reutilitzats entre features, com `Button` o `ConfirmDialog`, poden situar-se en una zona compartida. No es creen preventivament `common`, `core`, `helpers`, `utils` o múltiples capes compartides. La reutilització s’ha de confirmar abans d’abstraure; no s’aplica Atomic Design ni una Clean Architecture completa al frontend sense justificació.
+
+Aquests noms són exemples conceptuals, no una estructura física definitiva de carpetes.
+
+### 11.8. Regles de negoci i dades derivades
+
+El frontend no és un segon Domain. Les dades derivades amb significat de negoci es calculen al backend/Domain i es retornen per l’API. A partir de `preu_total`, `quantitat_regalada` i `quantitat_pagada`, el backend deriva `quantitat_pendent`, `quantitat_assumida` i `estat_economic`; React les presenta sense duplicar aquestes regles.
+
+React pot calcular estat purament de presentació sense significat de negoci. La representació i el moment d’obtenció dels valors derivats durant l’edició del formulari econòmic no es concreten aquí; no s’inventa un endpoint ni un càlcul local per resoldre aquest detall pendent.
+
+### 11.9. Absència d’un store global general
+
+No s’adopten Redux, Zustand ni un store global equivalent: els requisits actuals no justifiquen una infraestructura transversal addicional. TanStack Query gestiona el server state, l’estat temporal de UI es manté local i el flux de creació té estat compartit específic i acotat. La decisió es podrà revisar si apareix una necessitat real.
+
+## 12. Decisions obertes fora d’A01–A10
+
+A01–A10 queden documentats al nivell arquitectònic descrit. Continuen pendents:
+
 - A11 — estratègia de testing;
 - A12 — estructura definitiva de carpetes, configuració i deployment;
 
@@ -383,9 +465,11 @@ A08 i A09 queden resolts al nivell arquitectònic descrit a §9–§10. Continue
 
 La tria de llibreries de validació i logging i la implementació concreta del mecanisme transaccional no queden fixades per A08.
 
-## 12. Observacions de coherència documental
+Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets i la configuració del frontend, sense generar codi, configuració de Vite o package.json en aquesta fase. També cal precisar el moment i mecanisme d’obtenció dels imports derivats al formulari econòmic (§11.8); si afecta la interacció visible, requerirà validació humana abans d’implementar-la.
 
-- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A09 ja validats; no modifica aquell estat general ni inicia implementació.
+## 13. Observacions de coherència documental
+
+- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A10 ja validats; no modifica aquell estat general ni inicia implementació.
 - UI/UX §9 encara deixa pendent la representació tècnica de `data_creacio`. A07 la concreta com a TIMESTAMPTZ en aquest document; la presentació UX no canvia.
 - El resum A07 utilitza 1:N per a Subcategoria–Item i Llista–ITEM_LLISTA, mentre que el domini explicita 1:0..N. A §8.2 es conserva expressament l’opcionalitat funcional, sense imposar un mínim d’un Item.
 - La cadena de responsabilitats d’A05 no implica que Domain depengui d’Infrastructure: aquesta lectura contradiria el límit explícit que impedeix al domini conèixer PostgreSQL o accedir a dades. §6 distingeix responsabilitats i dependències.
