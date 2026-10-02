@@ -2,11 +2,11 @@
 
 ## 1. Objectiu i abast
 
-Aquest document recull les decisions arquitectòniques validades A01–A08 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions i seguretat. No és una implementació ni un esquema SQL executable.
+Aquest document recull les decisions arquitectòniques validades A01–A09 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat i gestió de fotografies dels Items. No és una implementació ni un esquema SQL executable.
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Les decisions d’A09–A12 queden fora d’aquest document, excepte per identificar-les com a pendents a §10.
+Les decisions d’A10–A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §11.
 
 ## 2. A01 — Arquitectura general
 
@@ -203,6 +203,10 @@ L’eliminació d’una Llista és una operació de negoci regida per RF-21a i C
 
 Application/Domain comprova aquestes condicions. Quan l’eliminació és vàlida i confirmada, Application executa dins d’una única transacció l’eliminació dels Items i ITEM_LLISTA associats i, finalment, de la Llista, conservant la Botiga i sense eliminacions parcials. No s’utilitza CASCADE des de LLISTA_NADO per evitar aquestes comprovacions. Es conserva la regla independent d’eliminació individual d’Item de CU-11.
 
+### 8.8. Referència de fotografia
+
+ITEM conserva una referència nullable a la fotografia, opcional i amb un màxim d’una per Item. No s’afegeix una taula FOTO. PostgreSQL no guarda el binari ni una ruta física absoluta: la referència és relativa i controlada, segons A09 (§10).
+
 ## 9. A08 — Validació, gestió d’errors, transaccions i seguretat
 
 ### 9.1. Validació per capes
@@ -283,26 +287,107 @@ Es documenta el mecanisme arquitectònic, sense implementar l’abstracció tran
 
 **Autenticació i autorització.** La V1 continua sent personal i d’un únic Usuari, sense autenticació ni autorització. No es crea infraestructura preventiva d’auth per a requisits futurs hipotètics.
 
-**Fotografies i uploads.** La seguretat i validació específica de fitxers es tractarà a A09; no es decideix en aquest bloc.
+**Fotografies i uploads.** La seguretat i validació específica de fitxers es defineix a A09 (§10).
 
-## 10. Decisions obertes fora d’A01–A08
+## 10. A09 — Gestió de fotografies dels Items
 
-A08 queda resolt al nivell arquitectònic descrit a §9. Queden per als blocs A09–A12, sense decidir-les aquí:
+### 10.1. Emmagatzematge
+
+Les fotografies s’emmagatzemen al **filesystem local** en la V1. PostgreSQL conserva únicament una referència relativa al fitxer, com `items/<identificador-intern>.<extensio>`, sense guardar-ne el binari ni una ruta física absoluta de la màquina.
+
+La ubicació física arrel dels uploads és configuració d’Infrastructure, que assumeix l’emmagatzematge i la resolució de referències. Domain no coneix paths físics, filesystem ni detalls d’emmagatzematge.
+
+Object storage o cloud són possibles evolucions futures, sense infraestructura preventiva en V1. Es manté una única fotografia opcional per Item, sense galeries, historial de fotos ni metadades fotogràfiques com a funcionalitat.
+
+### 10.2. Identificació física dels fitxers
+
+El backend genera un identificador intern únic per a cada fitxer. No s’utilitza el nom original proporcionat per l’Usuari com a nom persistent. Això evita col·lisions, dependència de noms externs, problemes de paths i exposició innecessària del nom original.
+
+Aquest identificador de fitxer és independent dels IDs d’entitats de PostgreSQL, que continuen sent enters amb IDENTITY segons A07. No se’n fixa un mecanisme concret ni s’introdueixen factories o abstraccions complexes.
+
+### 10.3. Validació de l’upload
+
+El backend verifica que el contingut real es pot identificar i decodificar com una imatge d’un format admès. No confia únicament en l’extensió ni en el Content-Type/MIME declarat pel client. Si no és una imatge vàlida i processable, o el format no està admès, rebutja l’upload.
+
+S’admeten formats habituals de fotografia mòbil, inclosos explícitament **HEIC/HEIF**, segons RF-01b. No s’amplia el suport a formats sense necessitat ni es tria encara una llibreria de processament.
+
+Aquesta comprovació és part de la seguretat de l’upload. Es manté la separació d’A08: la validació funcional, per si sola, no és una defensa de seguretat.
+
+### 10.4. Límit de mida
+
+El límit inicial d’entrada és de **10 MB per fotografia**. És un límit tècnic configurable, no una regla del domini. Protegeix memòria, disc i CPU abans d’un processament potencialment costós.
+
+Es podrà ajustar si les proves reals amb fotografies mòbils i HEIC mostren que és insuficient, sense modificar el model de domini.
+
+### 10.5. Normalització
+
+La fotografia pujada és una entrada del sistema; Nestly no ha de conservar un original fotogràfic. Després de validar-la, es processa, se’n corregeix l’orientació quan cal, es redimensiona, es comprimeix i es converteix a un format web homogeni.
+
+Només es guarda la versió normalitzada i optimitzada. Un cop generada correctament, no cal conservar l’original enviat per l’Usuari.
+
+Queden pendents la llibreria, el format final, la resolució i els paràmetres exactes de qualitat i compressió. Es decidiran durant la implementació o quan hi hagi criteris suficients; A09 tanca la política, no aquests paràmetres.
+
+### 10.6. Accés des del frontend
+
+En la V1 local i d’un únic Usuari, les fotografies normalitzades es poden servir com a recursos estàtics. El frontend obté una URL utilitzable per mostrar-les, però PostgreSQL continua guardant una referència relativa i controlada, no una URL absoluta.
+
+No es crea un cas d’ús ni un endpoint de domini com `GET /api/items/:id/photo` només per servir cada fotografia: no hi ha autenticació ni autorització individual per fotografia que ho justifiqui. No s’introdueixen CDN, signed URLs, object storage ni infraestructura d’autorització futura.
+
+### 10.7. Substitució de fotografia
+
+La substitució prioritza conservar la fotografia anterior fins que la nova sigui vàlida. Application coordina aquest ordre:
+
+1. Validar la nova fotografia.
+2. Processar-la i normalitzar-la.
+3. Guardar correctament el nou fitxer.
+4. Actualitzar la referència persistent de l’Item.
+5. Eliminar el fitxer anterior.
+
+PostgreSQL i filesystem **no comparteixen una transacció ACID**. S’apliquen aquestes conseqüències:
+
+| Fallada | Resultat i compensació |
+| --- | --- |
+| Validació, processament o guardat del nou fitxer | La fotografia anterior es manté intacta. |
+| El nou fitxer s’ha guardat, però falla l’actualització de PostgreSQL | Es conserva la referència anterior i s’intenta eliminar el nou fitxer com a compensació. |
+| PostgreSQL ja apunta al nou fitxer, però falla l’eliminació de l’antic | La substitució funcional és correcta; es registra la fallada de neteja i es tolera temporalment el fitxer orfe. |
+
+No es dissenya una transacció distribuïda ni un sistema complex de jobs o garbage collection automàtic per a aquest cas.
+
+### 10.8. Eliminació d’un Item amb fotografia
+
+La dada funcional principal és l’Item. Primer es completa la seva eliminació funcional a PostgreSQL i després s’elimina físicament la fotografia. No s’elimina primer el fitxer si una fallada posterior de PostgreSQL podria deixar un Item existent sense fotografia.
+
+Si PostgreSQL ha eliminat correctament l’Item però falla la neteja del filesystem, l’Item continua considerant-se eliminat. No es reverteix l’operació funcional: es registra la fallada i es tolera temporalment el fitxer orfe. No s’implementa preventivament un sistema automàtic de neteja d’orfes en V1.
+
+### 10.9. Responsabilitats arquitectòniques
+
+| Àmbit | Responsabilitat |
+| --- | --- |
+| Controller / HTTP | Rep l’upload i aplica les restriccions de la frontera HTTP. |
+| Application | Coordina l’operació funcional quan fotografia i Item formen part del mateix cas d’ús, l’ordre de les operacions i les compensacions simples necessàries. |
+| Domain | Manté les regles funcionals sense conèixer filesystem, paths físics, MIME, llibreries de processament ni mecanismes d’upload. |
+| Infrastructure | Implementa l’emmagatzematge físic, resol referències relatives, processa i normalitza imatges i interactua amb el filesystem. |
+
+Una abstracció petita pot mantenir Application independent del filesystem concret. No es creen jerarquies complexes de storage providers, factories o adapters sense necessitat. Les transaccions PostgreSQL d’A08 conserven el seu abast; les operacions de filesystem es coordinen amb les compensacions descrites, sense convertir-les en una transacció ACID conjunta.
+
+## 11. Decisions obertes fora d’A01–A09
+
+A08 i A09 queden resolts al nivell arquitectònic descrit a §9–§10. Continuen pendents:
+
+- A10 — arquitectura detallada del frontend;
+- A11 — estratègia de testing;
+- A12 — estructura definitiva de carpetes, configuració i deployment;
 
 - representació TypeScript definitiva dels imports NUMERIC;
-- emmagatzematge de fotografies, conversió HEIC/HEIF i seguretat i validació específica dels uploads (A09);
-- arquitectura detallada del frontend;
-- estratègia de testing;
-- estructura definitiva de carpetes;
-- configuració i deployment.
+- llibreria de processament d’imatges, format web final, resolució i qualitat/compressió exactes, segons §10.5.
 
 La tria de llibreries de validació i logging i la implementació concreta del mecanisme transaccional no queden fixades per A08.
 
-## 11. Observacions de coherència documental
+## 12. Observacions de coherència documental
 
-- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A08 ja validats; no modifica aquell estat general ni inicia implementació.
+- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A09 ja validats; no modifica aquell estat general ni inicia implementació.
 - UI/UX §9 encara deixa pendent la representació tècnica de `data_creacio`. A07 la concreta com a TIMESTAMPTZ en aquest document; la presentació UX no canvia.
 - El resum A07 utilitza 1:N per a Subcategoria–Item i Llista–ITEM_LLISTA, mentre que el domini explicita 1:0..N. A §8.2 es conserva expressament l’opcionalitat funcional, sense imposar un mínim d’un Item.
 - La cadena de responsabilitats d’A05 no implica que Domain depengui d’Infrastructure: aquesta lectura contradiria el límit explícit que impedeix al domini conèixer PostgreSQL o accedir a dades. §6 distingeix responsabilitats i dependències.
 
-No s’han modificat les fonts funcionals ni s’han generat migracions, sentències de creació de taules o codi.
+No s’han modificat regles funcionals ni s’han generat migracions, sentències de creació de taules o codi. UI/UX referencia les decisions tècniques de fotografia resoltes a A09.
