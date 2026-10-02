@@ -2,11 +2,11 @@
 
 ## 1. Objectiu i abast
 
-Aquest document recull les decisions arquitectòniques validades A01–A10 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat, gestió de fotografies dels Items i arquitectura frontend. No és una implementació ni un esquema SQL executable.
+Aquest document recull les decisions arquitectòniques validades A01–A11 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat, gestió de fotografies dels Items, arquitectura frontend i estratègia de testing. No és una implementació ni un esquema SQL executable.
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Les decisions d’A11–A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §12.
+Les decisions d’A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §13. L’arquitectura no es considera finalitzada: resten A12 i la revisió final.
 
 ## 2. A01 — Arquitectura general
 
@@ -453,11 +453,121 @@ React pot calcular estat purament de presentació sense significat de negoci. La
 
 No s’adopten Redux, Zustand ni un store global equivalent: els requisits actuals no justifiquen una infraestructura transversal addicional. TanStack Query gestiona el server state, l’estat temporal de UI es manté local i el flux de creació té estat compartit específic i acotat. La decisió es podrà revisar si apareix una necessitat real.
 
-## 12. Decisions obertes fora d’A01–A10
+## 12. A11 — Estratègia de testing
 
-A01–A10 queden documentats al nivell arquitectònic descrit. Continuen pendents:
+### 12.1. Principi general i no duplicació
 
-- A11 — estratègia de testing;
+Cada regla o comportament es prova principalment al nivell més baix que el pugui verificar amb confiança. Els nivells superiors comproven integració, contractes i fluxos entre peces, sense repetir exhaustivament les combinacions ja cobertes als nivells inferiors.
+
+La piràmide de testing és una orientació, no un dogma: es prioritzen tests petits i ràpids on aporten valor i es reserven els més costosos per a integracions i fluxos crítics.
+
+| Nivell | Responsabilitat principal |
+| --- | --- |
+| Domain | Cobrir exhaustivament les regles de negoci rellevants mitjançant casos normals, límits i classes de comportament significatives. |
+| Application | Comprovar la coordinació dels casos d’ús. |
+| Infrastructure | Verificar la persistència real. |
+| HTTP / API | Comprovar el contracte HTTP. |
+| React | Verificar comportament observable per l’Usuari. |
+| E2E | Comprovar que fluxos crítics complets funcionen conjuntament. |
+
+Els nivells superiors poden exercitar comportaments dels inferiors en integrar-los, però no dupliquen totes les combinacions només per augmentar cobertura.
+
+### 12.2. Tests de Domain
+
+Les regles de Domain es proven principalment amb tests unitaris aïllats, sense React, Express, HTTP ni PostgreSQL. Cobreixen càlculs econòmics derivats, invariants econòmiques, condicions d’eliminació de Llista, transicions permeses i decisions de recollida/correcció que corresponguin al domini.
+
+Per a l’eliminació d’una Llista, les classes de comportament inclouen:
+
+- Llista buida: eliminació permesa.
+- Tots els Items `demanat`, amb `quantitat_pagada = 0` i `quantitat_regalada = 0`: permesa.
+- Algun Item amb `quantitat_pagada > 0`: bloquejada.
+- Algun Item amb `quantitat_regalada > 0`: bloquejada.
+- Algun Item amb estat diferent de `demanat`: bloquejada.
+- Diversos Items amb només un que incompleix la regla: tota l’operació bloquejada.
+
+No es multipliquen tests redundants amb valors que representen la mateixa classe de comportament. Domain prova la decisió de negoci, no codis 400, 404 o 409: no coneix HTTP.
+
+### 12.3. Tests d’Application
+
+Application es prova principalment amb tests unitaris. Els ports de persistència se substitueixen per fakes, stubs o dobles simples per preparar escenaris controlats sense PostgreSQL real ni dependència de la seva implementació.
+
+Es comproven la coordinació del cas d’ús, la interacció amb Domain, les operacions que cal executar, la resposta davant resultats o errors dels ports i la coordinació conceptual d’operacions atòmiques. La transacció PostgreSQL real es verifica al nivell d’integració corresponent.
+
+Es manté la separació d’A05 entre Application, ports i Infrastructure. No es crea un framework intern complex de mocks, factories o builders de test sense necessitat.
+
+### 12.4. Tests d’Infrastructure i PostgreSQL
+
+La persistència es prova amb tests d’integració que utilitzen la implementació Infrastructure/repository real, el driver real i PostgreSQL real destinat específicament a testing. Fer mock de `pg` no substitueix aquestes proves.
+
+Es verifica el SQL real: INSERT, SELECT, UPDATE i DELETE quan són rellevants, JOINs, filtres, mappings PostgreSQL ↔ TypeScript, FK, UNIQUE, CHECK, CASCADE, RESTRICT i comportament transaccional. La selecció se centra en comportaments que aporten confiança sobre A07/A08, sense provar mecànicament totes les combinacions CRUD de totes les taules.
+
+### 12.5. Base de dades de test separada
+
+La BD PostgreSQL de test està separada de la de desenvolupament manual. Els tests no operen sobre les dades que l’Usuari utilitza durant aquest desenvolupament.
+
+Ha de permetre preparar dades controlades, executar operacions destructives i proves DELETE/CASCADE/RESTRICT, i reinicialitzar o netejar l’estat. Les proves han de ser repetibles i independents de les dades manuals.
+
+El mecanisme per proporcionar-la i gestionar-ne el lifecycle queda per A12/configuració: no es decideixen ara Docker, Docker Compose, scripts, containers de test ni CI.
+
+### 12.6. Tests HTTP / API
+
+La frontera HTTP té proves representatives de routing, parsing i validació estructural de requests, status codes, responses JSON i contracte d’errors. Verifiquen `code`, `message`, `fieldErrors` quan correspon i la traducció dels errors d’Application/Domain a HTTP segons A08:
+
+| Cas representatiu | Resultat esperat |
+| --- | --- |
+| Dades d’entrada invàlides | 400. |
+| Recurs necessari inexistent | 404. |
+| Operació bloquejada per l’estat actual o la regla corresponent | 409. |
+| Error inesperat | 500 controlat, sense exposar informació interna. |
+
+La regla completa d’eliminació d’una Llista es cobreix a Domain/Application; HTTP comprova casos representatius de la traducció al contracte, sense repetir totes les combinacions.
+
+### 12.7. Tests de frontend / React
+
+Els tests de components prioritzen el comportament observable. Eviten acoblament a funcions o variables internes, implementació dels hooks, crides internes de React Hook Form o estructura interna irrellevant per a l’Usuari.
+
+Per exemple, davant `fieldErrors.nom` retornat pel backend, es comprova que l’Usuari veu l’error al camp Nom; no que React Hook Form hagi cridat internament `setError()`.
+
+Són candidats les interaccions de formulari, errors inline, confirmacions, comportaments condicionals i resultats visibles després d’una operació, segons UI/UX. Un refactor intern que preservi el comportament observable no hauria de trencar innecessàriament els tests.
+
+### 12.8. Tests end-to-end
+
+Hi haurà pocs E2E, seleccionats per a fluxos crítics entre diverses parts del sistema. Poden integrar conceptualment:
+
+```text
+Browser → React → HTTP → Express → Application → Domain
+→ Infrastructure → PostgreSQL de test
+```
+
+Són més costosos, lents i amb més punts de fallada que els unitaris. No reprodueixen exhaustivament tots els casos d’ús ni variants de Domain.
+
+Els candidats identificats són recollir un Item i comprovar-ne el resultat visible, editar imports i consultar els valors/estat derivats, crear un Item associat a una Llista i eliminar una Llista quan correspon. No obliguen a crear exactament quatre E2E: durant la implementació se seleccionaran els fluxos que justifiquin el cost per la confiança que aporten.
+
+### 12.9. Cobertura
+
+El code coverage és un indicador auxiliar per detectar zones poc exercitades. No es fixa un percentatge obligatori ni se substitueixen la qualitat dels casos, els límits, els comportaments significatius i la integració per una mètrica. L’objectiu és tenir tests útils i confiança real en el sistema.
+
+### 12.10. Eines adoptades
+
+S’adopten aquestes eines segons el criteri de dependències d’A10:
+
+| Eina | Responsabilitat |
+| --- | --- |
+| Vitest | Runner principal per a Domain, Application, integració backend/Infrastructure, HTTP/API i frontend quan correspon. No s’introdueix Jest en paral·lel sense necessitat concreta. |
+| React Testing Library | Tests de components orientats al comportament observable. Es pot utilitzar `user-event` per simular interaccions; no per inspeccionar detalls interns. |
+| Supertest | Exercitar requests/responses i el contracte HTTP d’Express sense convertir les proves en E2E complets. Complementa Vitest; no és un runner alternatiu. |
+| Playwright | E2E seleccionats a través de la UI i el sistema. No s’utilitza també com a framework general de components mentre React Testing Library cobreixi aquesta necessitat, ni s’afegeix Cypress o una altra eina E2E paral·lela sense justificació. |
+
+### 12.11. Límits d’A11
+
+No es defineixen encara carpetes de tests, noms de fitxers o convencions de naming, scripts de package.json, configuracions de Vitest o Playwright, fixtures, factories/builders, implementació de mocks/fakes ni dades seed definitives. Tampoc el mecanisme per aixecar PostgreSQL de test, Docker/Compose o CI/CD. Corresponen a A12 o a la implementació quan calgui.
+
+A11 no imposa un nombre exacte d’E2E ni un percentatge obligatori de coverage.
+
+## 13. Decisions obertes fora d’A01–A11
+
+A01–A11 queden documentats al nivell arquitectònic descrit. L’arquitectura encara requereix A12 i la revisió final. Continuen pendents:
+
 - A12 — estructura definitiva de carpetes, configuració i deployment;
 
 - representació TypeScript definitiva dels imports NUMERIC;
@@ -467,9 +577,11 @@ La tria de llibreries de validació i logging i la implementació concreta del m
 
 Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets i la configuració del frontend, sense generar codi, configuració de Vite o package.json en aquesta fase. També cal precisar el moment i mecanisme d’obtenció dels imports derivats al formulari econòmic (§11.8); si afecta la interacció visible, requerirà validació humana abans d’implementar-la.
 
-## 13. Observacions de coherència documental
+Els detalls de configuració i implementació de testing enumerats a §12.11 continuen oberts, inclosa la provisió i el lifecycle de la BD PostgreSQL de test separada.
 
-- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A10 ja validats; no modifica aquell estat general ni inicia implementació.
+## 14. Observacions de coherència documental
+
+- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A11 ja validats; no modifica aquell estat general ni inicia implementació.
 - UI/UX §9 encara deixa pendent la representació tècnica de `data_creacio`. A07 la concreta com a TIMESTAMPTZ en aquest document; la presentació UX no canvia.
 - El resum A07 utilitza 1:N per a Subcategoria–Item i Llista–ITEM_LLISTA, mentre que el domini explicita 1:0..N. A §8.2 es conserva expressament l’opcionalitat funcional, sense imposar un mínim d’un Item.
 - La cadena de responsabilitats d’A05 no implica que Domain depengui d’Infrastructure: aquesta lectura contradiria el límit explícit que impedeix al domini conèixer PostgreSQL o accedir a dades. §6 distingeix responsabilitats i dependències.
