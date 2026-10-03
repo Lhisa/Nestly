@@ -78,6 +78,8 @@ El backend no confia en el client i només accepta i modifica els camps permesos
 
 Els codis HTTP d’error i el contracte de resposta es defineixen a A08 (§9.2).
 
+En el contracte HTTP/API, tots els imports monetaris de requests i responses JSON es representen com nombres enters en cèntims, inclosos els imports derivats i els totals econòmics retornats. La representació entre capes i els exemples es concreten a §13.5.
+
 ## 8. A07 — Model físic PostgreSQL
 
 ### 8.1. Taules i identificadors
@@ -597,7 +599,34 @@ S’adopta **node-pg-migrate** com a runner. Les migracions es versionen amb el 
 
 Nestly V1 treballa exclusivament amb **EUR (€)**. No es persisteix cap camp currency; la multimoneda queda fora d’abast. PostgreSQL manté **NUMERIC(7,2)** segons A07.
 
-Dins de TypeScript/Application/Domain, els imports es representen com **enters en cèntims**. Infrastructure fa el mapping entre NUMERIC de PostgreSQL i els cèntims interns. Domain no coneix `pg` ni la seva representació de NUMERIC.
+Dins de TypeScript/Application/Domain, els imports es representen com **enters en cèntims**. Infrastructure és responsable de la conversió exacta i bidireccional entre NUMERIC(7,2) de PostgreSQL i els cèntims enters. Domain no coneix `pg` ni la seva representació de NUMERIC. La persistència continua sent NUMERIC(7,2); no es migra a INTEGER.
+
+HTTP/API representa tots els imports monetaris com enters en cèntims, i el frontend els rep i manipula amb aquesta mateixa representació. Els càlculs econòmics, inclosa la previsualització UX de §11.8, operen amb enters en cèntims, sense utilitzar decimals JavaScript. Es manté l’autoritat del backend sobre els valors derivats.
+
+La conversió a euros és responsabilitat de la capa de presentació: la UI mostra els imports amb el format monetari adequat per a l’Usuari. El format visible no canvia la representació del contracte HTTP/API.
+
+| Import en euros / exemple de presentació UI | Enter en cèntims al backend, HTTP/API i frontend |
+| --- | --- |
+| 45,00 € | `4500` |
+| 45,50 € | `4550` |
+| 0,99 € | `99` |
+| 120,05 € | `12005` |
+
+El flux complet de representació és:
+
+```text
+PostgreSQL NUMERIC(7,2)
+    ↕
+Infrastructure: conversió exacta
+    ↕
+Domain/Application: cèntims enters
+    ↕
+HTTP/API: cèntims enters
+    ↕
+Frontend: cèntims enters
+    ↕
+Presentació UI: euros amb format local
+```
 
 No s’introdueix una llibreria decimal: els imports tenen dos decimals fixos, el rang és reduït i els cèntims enters eviten els problemes de coma flotant en els càlculs monetaris. No es fixa preventivament una classe Money o abstracció equivalent; es valorarà durant la implementació només si aporta valor real.
 
