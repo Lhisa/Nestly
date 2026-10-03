@@ -2,11 +2,11 @@
 
 ## 1. Objectiu i abast
 
-Aquest document recull les decisions arquitectòniques validades A01–A11 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat, gestió de fotografies dels Items, arquitectura frontend i estratègia de testing. No és una implementació ni un esquema SQL executable.
+Aquest document recull les decisions arquitectòniques validades A01–A12 de Nestly V1: estructura general, tecnologies, responsabilitats, criteris d’API, model físic PostgreSQL, validació, gestió d’errors, transaccions, seguretat, gestió de fotografies dels Items, arquitectura frontend, estratègia de testing, estructura del projecte, configuració i execució local. No és una implementació ni un esquema SQL executable.
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Les decisions d’A12 i els detalls tècnics encara oberts s’identifiquen com a pendents a §13. L’arquitectura no es considera finalitzada: resten A12 i la revisió final.
+Amb A12 i la revisió de coherència de §15, l’Arquitectura V1 A01–A12 queda finalitzada al nivell arquitectònic. Els detalls d’implementació de §14 no es consideren resolts per aquest tancament. La implementació encara no s’ha iniciat.
 
 ## 2. A01 — Arquitectura general
 
@@ -144,7 +144,7 @@ Domain valida les invariants funcionals i PostgreSQL les reforça amb CHECK:
 
 La quantitat regalada continua sent la part assumida per tercers; la pagada és només la part pròpia ja pagada. No s’ajusten automàticament els imports ni es modifica automàticament la comanda en registrar-los.
 
-No es persisteixen `quantitat_pendent`, `quantitat_assumida`, `estat_economic` ni els totals econòmics agregats de LLISTA_NADO. Es calculen segons els requisits, igual que la resta d’informació derivada del domini. La representació TypeScript definitiva de NUMERIC queda pendent.
+No es persisteixen `quantitat_pendent`, `quantitat_assumida`, `estat_economic` ni els totals econòmics agregats de LLISTA_NADO. Es calculen segons els requisits, igual que la resta d’informació derivada del domini. A12 (§13.5) concreta la representació interna TypeScript en cèntims enters i el mapping amb NUMERIC a Infrastructure.
 
 ### 8.5. Dates
 
@@ -309,7 +309,7 @@ Aquest identificador de fitxer és independent dels IDs d’entitats de PostgreS
 
 El backend verifica que el contingut real es pot identificar i decodificar com una imatge d’un format admès. No confia únicament en l’extensió ni en el Content-Type/MIME declarat pel client. Si no és una imatge vàlida i processable, o el format no està admès, rebutja l’upload.
 
-S’admeten formats habituals de fotografia mòbil, inclosos explícitament **HEIC/HEIF**, segons RF-01b. No s’amplia el suport a formats sense necessitat ni es tria encara una llibreria de processament.
+S’admeten formats habituals de fotografia mòbil, inclosos explícitament **HEIC/HEIF**, segons RF-01b. No s’amplia el suport a formats sense necessitat. Sharp continua sent la llibreria general de processament. Per a entrades HEIC/HEIF que Sharp no pugui decodificar de manera fiable en l’entorn local de Nestly, s’utilitza **libheif-js** com a decoder específic; el resultat decodificat continua pel pipeline normal de Sharp descrit a §10.5.
 
 Aquesta comprovació és part de la seguretat de l’upload. Es manté la separació d’A08: la validació funcional, per si sola, no és una defensa de seguretat.
 
@@ -321,11 +321,11 @@ Es podrà ajustar si les proves reals amb fotografies mòbils i HEIC mostren que
 
 ### 10.5. Normalització
 
-La fotografia pujada és una entrada del sistema; Nestly no ha de conservar un original fotogràfic. Després de validar-la, es processa, se’n corregeix l’orientació quan cal, es redimensiona, es comprimeix i es converteix a un format web homogeni.
+La fotografia pujada és una entrada del sistema; Nestly no conserva l’original fotogràfic. Es decodifica amb Sharp o, per a HEIC/HEIF quan calgui, amb libheif-js segons §10.3. El resultat es normalitza amb **Sharp**, se’n corregeix l’orientació i es redimensiona preservant l’aspect ratio, amb un costat més llarg màxim inicial de **1600 px**, sense ampliar les imatges més petites. El format normalitzat final és **WebP**.
 
 Només es guarda la versió normalitzada i optimitzada. Un cop generada correctament, no cal conservar l’original enviat per l’Usuari.
 
-Queden pendents la llibreria, el format final, la resolució i els paràmetres exactes de qualitat i compressió. Es decidiran durant la implementació o quan hi hagi criteris suficients; A09 tanca la política, no aquests paràmetres.
+La qualitat/compressió exacta és configurable i s’ajustarà durant la implementació amb fotografies reals; no és un valor arquitectònic fix. Es mantenen el límit inicial d’upload de 10 MB i la validació per decodificació real, sense confiar només en extensió o MIME. Segons el criteri d’A10, les dependències que processen uploads s’han de mantenir actualitzades, especialment davant correccions de seguretat; no se’n fixen versions en aquest document.
 
 ### 10.6. Accés des del frontend
 
@@ -367,6 +367,8 @@ Si PostgreSQL ha eliminat correctament l’Item però falla la neteja del filesy
 | Application | Coordina l’operació funcional quan fotografia i Item formen part del mateix cas d’ús, l’ordre de les operacions i les compensacions simples necessàries. |
 | Domain | Manté les regles funcionals sense conèixer filesystem, paths físics, MIME, llibreries de processament ni mecanismes d’upload. |
 | Infrastructure | Implementa l’emmagatzematge físic, resol referències relatives, processa i normalitza imatges i interactua amb el filesystem. |
+
+La selecció del decoder i el pipeline de processament queden encapsulats a Infrastructure. Domain, Application i frontend no coneixen Sharp, libheif-js ni els detalls de decoding.
 
 Una abstracció petita pot mantenir Application independent del filesystem concret. No es creen jerarquies complexes de storage providers, factories o adapters sense necessitat. Les transaccions PostgreSQL d’A08 conserven el seu abast; les operacions de filesystem es coordinen amb les compensacions descrites, sense convertir-les en una transacció ACID conjunta.
 
@@ -445,9 +447,9 @@ Aquests noms són exemples conceptuals, no una estructura física definitiva de 
 
 ### 11.8. Regles de negoci i dades derivades
 
-El frontend no és un segon Domain. Les dades derivades amb significat de negoci es calculen al backend/Domain i es retornen per l’API. A partir de `preu_total`, `quantitat_regalada` i `quantitat_pagada`, el backend deriva `quantitat_pendent`, `quantitat_assumida` i `estat_economic`; React les presenta sense duplicar aquestes regles.
+El frontend no és un segon Domain. Els valors derivats autoritatius es calculen al backend/Domain i es retornen per l’API. A partir de `preu_total`, `quantitat_regalada` i `quantitat_pagada`, el backend deriva `quantitat_pendent`, `quantitat_assumida` i `estat_economic`.
 
-React pot calcular estat purament de presentació sense significat de negoci. La representació i el moment d’obtenció dels valors derivats durant l’edició del formulari econòmic no es concreten aquí; no s’inventa un endpoint ni un càlcul local per resoldre aquest detall pendent.
+Durant l’edició del formulari econòmic, React pot calcular localment una previsualització dels imports derivats per donar feedback immediat. Aquest càlcul és exclusivament UX i no és autoritatiu. En Crear/Desar, el backend valida els imports, Domain aplica les regles de negoci i el backend calcula els valors derivats autoritatius; la seva resposta és la font de veritat. No es fa una request per cada canvi de camp només per obtenir aquesta previsualització. Aquesta concreció d’A12 no trasllada les regles de negoci al frontend.
 
 ### 11.9. Absència d’un store global general
 
@@ -507,7 +509,7 @@ La BD PostgreSQL de test està separada de la de desenvolupament manual. Els tes
 
 Ha de permetre preparar dades controlades, executar operacions destructives i proves DELETE/CASCADE/RESTRICT, i reinicialitzar o netejar l’estat. Les proves han de ser repetibles i independents de les dades manuals.
 
-El mecanisme per proporcionar-la i gestionar-ne el lifecycle queda per A12/configuració: no es decideixen ara Docker, Docker Compose, scripts, containers de test ni CI.
+A12 proporciona PostgreSQL mitjançant serveis Docker independents: `postgres-dev` amb `nestly_dev` i `postgres-test` amb `nestly_test`. Desenvolupament i test no comparteixen servei; el de test es pot reinicialitzar o destruir sense afectar desenvolupament i només necessita estar actiu quan s’executen proves que el requereixen. El mecanisme exacte de reset, fixtures, scripts i lifecycle queda per a la implementació.
 
 ### 12.6. Tests HTTP / API
 
@@ -560,29 +562,71 @@ S’adopten aquestes eines segons el criteri de dependències d’A10:
 
 ### 12.11. Límits d’A11
 
-No es defineixen encara carpetes de tests, noms de fitxers o convencions de naming, scripts de package.json, configuracions de Vitest o Playwright, fixtures, factories/builders, implementació de mocks/fakes ni dades seed definitives. Tampoc el mecanisme per aixecar PostgreSQL de test, Docker/Compose o CI/CD. Corresponen a A12 o a la implementació quan calgui.
+No es defineixen encara carpetes de tests, noms de fitxers o convencions de naming, scripts de package.json, configuracions de Vitest o Playwright, fixtures, factories/builders, implementació de mocks/fakes ni dades seed definitives. Són detalls d’implementació, igual que el mecanisme exacte de reset i lifecycle. A12 ja resol la provisió de PostgreSQL de test amb un servei Docker independent i reinicialitzable sense afectar desenvolupament. No es dissenya CI/CD sense una necessitat posterior.
 
 A11 no imposa un nombre exacte d’E2E ni un percentatge obligatori de coverage.
 
-## 13. Decisions obertes fora d’A01–A11
+## 13. A12 — Estructura, configuració i execució local
 
-A01–A11 queden documentats al nivell arquitectònic descrit. L’arquitectura encara requereix A12 i la revisió final. Continuen pendents:
+### 13.1. Estructura del projecte
 
-- A12 — estructura definitiva de carpetes, configuració i deployment;
+Nestly utilitza un únic repositori amb les àrees conceptuals `frontend/`, `backend/` i `docs/`. No s’introdueixen npm/pnpm workspaces ni infraestructura de monorepo. No es crea preventivament un package compartit entre frontend i backend; només es revisarà si apareix una necessitat real durant la implementació.
 
-- representació TypeScript definitiva dels imports NUMERIC;
-- llibreria de processament d’imatges, format web final, resolució i qualitat/compressió exactes, segons §10.5.
+El backend s’organitza físicament segons les responsabilitats d’A05: `domain`, `application`, `infrastructure` i `http`. No s’afegeixen capes genèriques com core, common, managers o factories sense necessitat concreta. El frontend continua organitzat principalment per features segons A10.
+
+### 13.2. Configuració i entorns
+
+La configuració variable utilitza environment variables. El `.env` local no es versiona; `.env.example` es versiona sense secrets. Development i test tenen configuracions separades. El backend valida en arrencar que existeix la configuració essencial necessària, sense fixar encara una llibreria de validació de configuració.
+
+### 13.3. PostgreSQL i Docker
+
+Docker proporciona PostgreSQL de manera reproduïble. React i Express s’executen localment en V1, sense containerització preventiva. No es containeritza el backend només per resoldre HEIC/HEIF; aquesta possibilitat només es reconsideraria en el futur si apareguessin altres necessitats que la justifiquessin.
+
+| Entorn | Servei PostgreSQL independent | Base de dades |
+| --- | --- | --- |
+| Development | `postgres-dev` | `nestly_dev` |
+| Test | `postgres-test` | `nestly_test` |
+
+L’entorn de test pot ser destructiu i reinicialitzable sense afectar les dades de desenvolupament. El servei de test només necessita estar actiu quan s’executen tests que requereixen PostgreSQL. El reset, les fixtures i el lifecycle exactes es concretaran durant la implementació.
+
+### 13.4. Migracions
+
+S’adopta **node-pg-migrate** com a runner. Les migracions es versionen amb el projecte i el mateix historial s’ha de poder aplicar a development i test. Es prefereix SQL explícit dins del sistema de migracions, en coherència amb A04 i l’objectiu educatiu de treballar directament amb PostgreSQL/SQL. No s’introdueix un ORM ni s’implementen migracions en aquesta fase.
+
+### 13.5. Representació dels diners
+
+Nestly V1 treballa exclusivament amb **EUR (€)**. No es persisteix cap camp currency; la multimoneda queda fora d’abast. PostgreSQL manté **NUMERIC(7,2)** segons A07.
+
+Dins de TypeScript/Application/Domain, els imports es representen com **enters en cèntims**. Infrastructure fa el mapping entre NUMERIC de PostgreSQL i els cèntims interns. Domain no coneix `pg` ni la seva representació de NUMERIC.
+
+No s’introdueix una llibreria decimal: els imports tenen dos decimals fixos, el rang és reduït i els cèntims enters eviten els problemes de coma flotant en els càlculs monetaris. No es fixa preventivament una classe Money o abstracció equivalent; es valorarà durant la implementació només si aporta valor real.
+
+### 13.6. Concrecions de frontend i fotografies
+
+A12 resol la previsualització econòmica local no autoritativa del formulari a §11.8 i concreta Sharp, WebP i el límit inicial de 1600 px a §10.5. Es mantenen les responsabilitats d’A05, l’autoritat del backend i les regles funcionals existents. La qualitat/compressió exacta continua sent configurable i ajustable durant la implementació.
+
+### 13.7. Execució i deployment V1
+
+V1 és local i reproduïble. No inclou desplegar Nestly públicament a Internet: no es dissenyen hosting cloud, PostgreSQL gestionat, object storage, domini, HTTPS de producció, infraestructura de producció ni CI/CD sense una necessitat posterior. Els uploads continuen al filesystem local segons A09.
+
+Nestly ha de disposar d’un mecanisme senzill d’arrencada que eviti iniciar manualment cada component per separat. El mecanisme concret d’arrencada/aturada es definirà durant la implementació. Això no converteix Nestly en una aplicació desktop ni introdueix Electron, Windows Services, systemd o infraestructura similar.
+
+## 14. Detalls oberts d’implementació
+
+A01–A12 tanquen l’Arquitectura V1. Els punts següents es concretaran quan s’implementin les decisions; no representen blocs arquitectònics pendents.
 
 La tria de llibreries de validació i logging i la implementació concreta del mecanisme transaccional no queden fixades per A08.
 
-Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets i la configuració del frontend, sense generar codi, configuració de Vite o package.json en aquesta fase. També cal precisar el moment i mecanisme d’obtenció dels imports derivats al formulari econòmic (§11.8); si afecta la interacció visible, requerirà validació humana abans d’implementar-la.
+Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets, el detall de carpetes i la configuració del frontend. També la validació concreta de configuració, el mecanisme d’arrencada/aturada i els paràmetres configurables de qualitat/compressió de fotografies. No es generen codi, configuracions executables, Docker Compose, migracions ni package.json en aquesta fase.
 
-Els detalls de configuració i implementació de testing enumerats a §12.11 continuen oberts, inclosa la provisió i el lifecycle de la BD PostgreSQL de test separada.
+Els detalls de testing enumerats a §12.11 continuen oberts, inclosos reset, fixtures, scripts i lifecycle. La provisió amb serveis PostgreSQL Docker independents ja està resolta a §13.3.
 
-## 14. Observacions de coherència documental
+## 15. Observacions de coherència documental
 
-- `AGENTS.md` encara indica que el focus és UI/UX i que Arquitectura no s’ha iniciat. Aquest document recull l’encàrrec explícit posterior de documentar A01–A11 ja validats; no modifica aquell estat general ni inicia implementació.
-- UI/UX §9 encara deixa pendent la representació tècnica de `data_creacio`. A07 la concreta com a TIMESTAMPTZ en aquest document; la presentació UX no canvia.
+- `AGENTS.md` reflecteix el treball de UI/UX, el tancament d’Arquitectura A01–A12 i que la implementació encara no s’ha iniciat; es mantenen els principis i el workflow.
+- UI/UX §9 referencia les decisions tècniques de fotografies d’A09 completades per A12 i la representació de `data_creacio` resolta a A07. La presentació UX no canvia.
+- La previsualització econòmica local d’A12 concreta el punt pendent d’A10: és feedback UX, mentre que la resposta del backend continua sent autoritativa en Crear/Desar.
+- **Compatibilitat HEIC/HEIF resolta arquitectònicament:** es manté RF-01b. Quan Sharp no pugui decodificar aquestes entrades de manera fiable en l’entorn local, libheif-js les decodifica i el resultat continua pel pipeline de Sharp fins a WebP. La responsabilitat queda a Infrastructure (§10.3–§10.9), sense containeritzar el backend ni alterar l’execució local d’A12.
 - El resum A07 utilitza 1:N per a Subcategoria–Item i Llista–ITEM_LLISTA, mentre que el domini explicita 1:0..N. A §8.2 es conserva expressament l’opcionalitat funcional, sense imposar un mínim d’un Item.
 - La cadena de responsabilitats d’A05 no implica que Domain depengui d’Infrastructure: aquesta lectura contradiria el límit explícit que impedeix al domini conèixer PostgreSQL o accedir a dades. §6 distingeix responsabilitats i dependències.
 

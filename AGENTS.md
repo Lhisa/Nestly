@@ -65,7 +65,7 @@ Per a la V1, estan completades i validades les fases següents:
 - CASOS D’ÚS;
 - MODEL, inclosos els diagrames UML corresponents.
 
-El focus actual és el **DISSENY UI/UX de la V1**. L’arquitectura i la implementació encara no s’han iniciat. No avancis cap decisió d’arquitectura ni implementis funcionalitats mentre no s’hagin definit i validat les decisions necessàries de Disseny UI/UX.
+El **DISSENY UI/UX de la V1** està treballat i l’**ARQUITECTURA V1 A01–A12** està finalitzada i documentada. La implementació encara no s’ha iniciat. Els detalls d’implementació i les observacions de coherència consten a `docs/arquitectura-v1.md`.
 
 ## Com tractar les decisions
 
