@@ -576,6 +576,15 @@ Nestly utilitza un únic repositori amb les àrees conceptuals `frontend/`, `bac
 
 El backend s’organitza físicament segons les responsabilitats d’A05: `domain`, `application`, `infrastructure` i `http`. No s’afegeixen capes genèriques com core, common, managers o factories sense necessitat concreta. El frontend continua organitzat principalment per features segons A10.
 
+#### Tooling validat de M0.1
+
+S’utilitza **npm** com a gestor de paquets. `frontend/` i `backend/` són aplicacions separades dins del mateix repositori, cadascuna amb el seu propi `package.json`, sense npm workspaces ni tooling específic de monorepo.
+
+| Aplicació | Stack existent | Tooling de desenvolupament i build |
+| --- | --- | --- |
+| `frontend/` | React + TypeScript | **Vite** per al desenvolupament i el build. |
+| `backend/` | Node.js + Express + TypeScript | **tsx** per executar TypeScript durant el desenvolupament; **tsc** per a la comprovació de tipus i el build. |
+
 ### 13.2. Configuració i entorns
 
 La configuració variable utilitza environment variables. El `.env` local no es versiona; `.env.example` es versiona sense secrets. Development i test tenen configuracions separades. El backend valida en arrencar que existeix la configuració essencial necessària, sense fixar encara una llibreria de validació de configuració.
