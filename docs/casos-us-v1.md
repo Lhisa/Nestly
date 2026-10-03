@@ -181,7 +181,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 **Regles de negoci relacionades:**
 
 * Una Llista pot existir sense Items associats.
-* Els Items recollits continuen visibles dins de la Llista per conservar-ne la traçabilitat.
+* Els Items recollits continuen visibles dins de la Llista per conservar-ne el context de Llista.
 * El resum inclou tots els ITEM_LLISTA actuals de la Llista, recollits i pendents de recollir: `pendent_total = Σ quantitat_pendent`, `total_assumit = Σ quantitat_assumida`, `valor_total_productes = Σ preu_total` i `total_regalat = Σ quantitat_regalada`. S’apliquen les fórmules per Item de RF-27; el total assumit inclou la part pròpia ja pagada i la pendent, i el valor total dels productes inclou també la part regalada.
 * Els totals són derivats, no es persisteixen a LLISTA_NADO i no creen cap entitat de resum ni historial de pagaments.
 
@@ -260,7 +260,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 **Exemples conceptuals:**
 
-* Un **Cotxet** pertany a la Subcategoria **Cotxets**. Si hi ha una Recomanació d’1 Cotxet i l’Item està associat a una Llista de nadó, contribueix a la cobertura a través de la Subcategoria. Quan es recull, passa a considerar-se a casa i continua contribuint a la mateixa cobertura.
+* Un **Cotxet** pertany a la Subcategoria **Cotxet**. Si hi ha una Recomanació d’1 Cotxet i l’Item està associat a una Llista de nadó, contribueix a la cobertura a través de la Subcategoria. Quan es recull, passa a considerar-se a casa i continua contribuint a la mateixa cobertura.
 * Un **Body** rebut com a regal pertany a la Subcategoria **Bodies**. Si hi ha una Recomanació de 6 Bodies, l’Item hi contribueix encara que no estigui associat a cap Llista i estigui directament a casa.
 
 ### CU-09 — Consultar Item
@@ -513,7 +513,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 * Els estats previs a **recollit** es poden corregir o fer retrocedir. Si **recollit** s’ha registrat per error, també es pot corregir cap a un estat previ seleccionat explícitament, aplicant les conseqüències descrites al flux alternatiu.
 * **Preparada** no és un estat de comanda: pertany a l’estat de preparació de l’Item. Passar a **recollit** no implica marcar-lo com a preparat.
 * La transició a **recollit** no crea un nou Item.
-* L’Item recollit continua associat i visible dins de la seva Llista per preservar-ne la traçabilitat.
+* L’Item recollit continua associat i visible dins de la seva Llista per conservar-ne el context i la procedència de Llista.
 * `data_recollida` i `data_entrada_casa` no són editables manualment. Mentre l’Item és **recollit**, és a casa i totes dues dates coincideixen; si es corregeix cap a un estat previ, deixen de ser aplicables.
 * Crear un Item inicialment com a **recollit** aplica aquestes mateixes invariants dins de CU-08, sense requerir una transició posterior.
 
@@ -570,7 +570,7 @@ Un Item és una unitat física individual, pertany a una única Subcategoria i p
 
 Una Recomanació està associada a una Subcategoria, té una quantitat orientativa i no manté una relació directa amb cap Item. La relació conceptual és `ITEM → SUBCATEGORIA ← RECOMANACIO`: la cobertura es calcula amb els Items de la Subcategoria, amb l’exclusió de **Pendent de classificar**, i la Recomanació continua existint encara que ja estigui coberta.
 
-Per exemple, un **Cotxet** d’una Llista contribueix a la Recomanació de la Subcategoria **Cotxets** tant abans com després de ser recollit. Igualment, un **Body** rebut directament a casa contribueix a la Recomanació de la Subcategoria **Bodies** sense necessitat de cap Llista. Si una Recomanació no té encara cap Item a la seva Subcategoria, la quantitat actual és `0`.
+Per exemple, un **Cotxet** d’una Llista contribueix a la Recomanació de la Subcategoria **Cotxet** tant abans com després de ser recollit. Igualment, un **Body** rebut directament a casa contribueix a la Recomanació de la Subcategoria **Bodies** sense necessitat de cap Llista. Si una Recomanació no té encara cap Item a la seva Subcategoria, la quantitat actual és `0`.
 
 ### Llista
 

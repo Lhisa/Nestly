@@ -22,7 +22,7 @@ També dificulta comparar la quantitat disponible amb les recomanacions, evitar 
 
 Nestly és una aplicació web personal per centralitzar el registre i el control dels objectes relacionats amb l’arribada d’un nadó. Permet consultar els Items registrats, classificar-los, vincular-los a llistes de nadó quan correspongui i seguir-ne la situació de comanda, econòmica, de recollida i de preparació.
 
-L’aplicació també proporciona una visió de les quantitats disponibles respecte de les recomanades i preserva la traçabilitat dels Items que provenen d’una llista.
+L’aplicació també proporciona una visió de les quantitats disponibles respecte de les recomanades i conserva la procedència de Llista dels Items.
 
 ## 4. Objectius
 

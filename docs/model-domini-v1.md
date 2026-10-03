@@ -20,13 +20,13 @@ Queden fora de l’abast la sincronització amb botigues, la comparació o actua
 - **Objecte físic**: un Item representa una unitat física individual que pot existir sense llista o formar part d’una llista, i que contribueix al recompte de la seva Subcategoria.
 - **Recomanació**: una orientació de quantitat per a una Subcategoria, amb la qual es pot comparar el recompte dels Items que pertanyen a aquella Subcategoria.
 - **Llista de nadó**: el context d’una botiga en què es registren Items que formen part d’una llista, juntament amb la informació específica de compra o recollida.
-- **Traçabilitat**: la relació `ITEM_LLISTA` conserva el context d’un Item dins d’una llista, fins i tot després que aquest Item hagi estat recollit i sigui a casa.
+- **Context i procedència de Llista**: la relació `ITEM_LLISTA` conserva el context d’un Item dins d’una llista, fins i tot després que aquest Item hagi estat recollit i sigui a casa. Això permet continuar coneixent la Llista d’origen i consultar la informació d’adquisició corresponent. No implica historial d’estats ni auditoria de canvis; en corregir un `recollit` no es conserva ni s’infereix l’estat anterior.
 
 ## 4. Entitats
 
 ### 4.1. CATEGORIA
 
-Representa un grup general de classificació d’Items. La seva responsabilitat és ordenar el domini a un nivell ampli, com ara Roba, Bany, Joguines o Passeig.
+Representa un grup general de classificació d’Items. La seva responsabilitat és ordenar el domini a un nivell ampli, com ara Roba, Higiene i cura, Entreteniment o De passeig.
 
 | Atribut | Significat |
 | --- | --- |
@@ -37,7 +37,7 @@ Una Categoria agrupa Subcategories. No es relaciona directament amb ITEM: la cla
 
 ### 4.2. SUBCATEGORIA
 
-Representa el nivell específic de classificació dels Items. Exemples són Bodies, Pantalons o Mitjons dins de Roba; Peluixos o Sonalls dins de Joguines; Cotxet dins de Passeig; i Sabó dins de Bany.
+Representa el nivell específic de classificació dels Items. Exemples són Bodies, Texans o Mitjons dins de Roba; Llibres o Joguines dins d’Entreteniment; Cotxet dins de De passeig; i Sabó del cos dins d’Higiene i cura.
 
 | Atribut | Significat |
 | --- | --- |
@@ -48,6 +48,23 @@ Representa el nivell específic de classificació dels Items. Exemples són Bodi
 Cada Subcategoria pertany a una única Categoria. Pot existir sense cap Item associat; quan existeixen, els Items pertanyen a una única Subcategoria. És el punt de classificació dels Items i, opcionalment, pot tenir una Recomanació associada.
 
 Categories i Subcategories són dades predefinides que l’Usuari no crea, modifica ni elimina en V1. Inclouen la Subcategoria **Pendent de classificar**, que pertany a la Categoria **Pendent de classificar**. Aquesta classificació provisional permet mantenir exactament una Subcategoria per Item encara que no se’n conegui la correcta; posteriorment es pot substituir en editar l’Item. La relació no esdevé opcional.
+
+#### Catàleg inicial predefinit de V1
+
+Aquest és el catàleg inicial aprovat. És una decisió funcional: les Categories/Subcategories són dades base de Nestly, no dades personals ni fixtures de desenvolupament o test, i han d’estar disponibles de manera reproduïble en una instal·lació nova. El mecanisme tècnic de càrrega es decidirà durant M0 del [pla d’implementació](./pla-implementacio-v1.md).
+
+| Categoria | Subcategories |
+| --- | --- |
+| Roba | Bodies; Primera posta; Mitjons; Malles; Vestit; Pijama; Texans; Samarreta; Jersei; Anorac |
+| Higiene i cura | Arrullos; Sabó del cos; Crema hidratant; Crema del culet; Oli hidratant; Banyera; Joguines pel bany; Tallaungles |
+| De passeig | Cotxet; Bossa de passeig; Sac; Cadira del cotxe; Funda de cadireta |
+| Alimentació | Trona; Biberons; Pitets; Vaixella; Esterilitzador de biberons |
+| Bossa hospital Mare | Bates; Sabatilles; Maleta; Calces de cotó; Compreses; Sostenidors de lactància; Mugroneres |
+| Mobles | Colecho; Bressol/llit evolutiu; Canviador |
+| Entreteniment | Llibres; Joguines |
+| Pendent de classificar | Pendent de classificar |
+
+El catàleg pot evolucionar en versions futures, però no s’amplia ni es reorganitza sense una nova decisió explícita. Tot Item manté exactament una Subcategoria. Els Items de **Pendent de classificar** queden exclosos de la cobertura de Recomanacions fins que es reclassifiquin, segons §4.4.
 
 ### 4.3. ITEM
 
@@ -146,7 +163,7 @@ Es deriven `quantitat_pendent = preu_total - quantitat_regalada - quantitat_paga
 
 Un Item assumit íntegrament per tercers està **pagat** perquè queda completament liquidat, encara que la quantitat pagada pròpia sigui zero. No es modelen historial de pagaments, aportacions individuals, identitats de tercers, dates ni mètodes de pagament.
 
-Abans de **recollit**, l’estat de comanda es pot corregir o fer retrocedir entre els estats previs. També es pot corregir **recollit** si s’ha registrat per error. En arribar-hi, es registra automàticament la data actual com a `data_recollida` i la mateixa data com a `data_entrada_casa`, sense introducció manual. L’Item passa a considerar-se físicament a casa i conserva ITEM_LLISTA, la visibilitat dins de la Llista i la traçabilitat. Continua sent el mateix Item i la preparació esdevé aplicable amb valor inicial **no preparada**.
+Abans de **recollit**, l’estat de comanda es pot corregir o fer retrocedir entre els estats previs. També es pot corregir **recollit** si s’ha registrat per error. En arribar-hi, es registra automàticament la data actual com a `data_recollida` i la mateixa data com a `data_entrada_casa`, sense introducció manual. L’Item passa a considerar-se físicament a casa i conserva ITEM_LLISTA, la visibilitat dins de la Llista i el context d’adquisició. Continua sent el mateix Item i la preparació esdevé aplicable amb valor inicial **no preparada**.
 
 També és vàlid crear un Item de Llista amb estat inicial **recollit**. En la mateixa creació s’apliquen les mateixes invariants: dates actuals coincidents, registre automàtic, Item a casa, preparació inicial **no preparada** i un únic Item físic amb ITEM_LLISTA conservat. També s’hi aplica la possibilitat de correcció posterior.
 
@@ -176,7 +193,7 @@ De la mateixa manera, no existeix una relació directa entre ITEM i RECOMANACIO.
 5. Una Llista de nadó pot contenir zero, un o molts Items mitjançant ITEM_LLISTA.
 6. ITEM_LLISTA conté exclusivament la informació específica del context de l’Item dins de la llista.
 7. L’estat de comanda i la informació econòmica són dimensions diferents. Registrar `quantitat_pagada > 0` o `quantitat_regalada > 0` no canvia automàticament l’estat de comanda a **encarregat** ni a cap altre estat. L’Usuari canvia explícitament la comanda quan l’adquisició ha estat realment encarregada.
-8. Un Item recollit continua sent visible dins de la seva llista i conserva la seva traçabilitat.
+8. Un Item recollit continua sent visible dins de la seva llista i conserva el seu context i la procedència de Llista.
 9. Un Item recollit passa a considerar-se físicament a casa.
 10. En recollir un Item de Llista, també en crear-lo inicialment com a recollit, es registren automàticament les dates coincidents de recollida i entrada a casa segons §4.7. Un Item creat directament a casa no necessita aquesta data.
 11. Tots els Items registrats contribueixen al recompte actual de la seva Subcategoria, independentment de si ja han estat recollits o es troben pendents de recollida dins d’una llista. Els de **Pendent de classificar** queden exclosos de qualsevol cobertura fins que siguin reclassificats, segons §4.4.
@@ -213,7 +230,7 @@ Les quatre sumes es fan sobre tots els ITEM_LLISTA actuals de la Llista, incloso
 
 ### 8.1. Un Item representa una unitat física
 
-Cada objecte físic es modela individualment perquè el domini necessita poder controlar cada unitat. Així, cinc bodies són cinc Items i no un sol registre amb quantitat cinc. Aquesta decisió preserva la traçabilitat d’un Item concret, el seu estat de preparació i, si n’hi ha, el seu origen en una llista.
+Cada objecte físic es modela individualment perquè el domini necessita poder controlar cada unitat. Així, cinc bodies són cinc Items i no un sol registre amb quantitat cinc. Aquesta decisió permet identificar cada Item concret, el seu estat de preparació i, si n’hi ha, el seu origen en una llista.
 
 ### 8.2. Existència d’ITEM_LLISTA
 

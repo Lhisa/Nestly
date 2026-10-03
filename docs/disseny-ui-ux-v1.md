@@ -126,7 +126,7 @@ S’apliquen les fórmules per Item de §3.6. Els totals inclouen tots els ITEM_
 
 En seleccionar un Item, l’Usuari accedeix al seu detall. Des d’aquesta pantalla també es pot iniciar l’acció d’afegir un Item, reutilitzant el procés general de creació amb la Llista preseleccionada.
 
-Des del context de la Llista/ITEM_LLISTA es pot consultar la informació d’adquisició de cada Item, inclosos els recollits: estat de comanda, estat econòmic derivat, preu total, quantitat regalada, quantitat pagada pròpia, quantitat pendent derivada i data de recollida. Aquesta consulta conserva la traçabilitat sense afegir una pantalla d’historial ni duplicar les dades a ITEM. La informació econòmica completa es consulta al detall/context d’adquisició de l’Item, accessible des de la Llista també per als recollits; no s’afegeix al detall principal de l’Item a casa.
+Des del context de la Llista/ITEM_LLISTA es pot consultar la informació d’adquisició de cada Item, inclosos els recollits: estat de comanda, estat econòmic derivat, preu total, quantitat regalada, quantitat pagada pròpia, quantitat pendent derivada i data de recollida. Aquesta consulta conserva el context de Llista sense afegir una pantalla d’historial ni duplicar les dades a ITEM. La informació econòmica completa es consulta al detall/context d’adquisició de l’Item, accessible des de la Llista també per als recollits; no s’afegeix al detall principal de l’Item a casa.
 
 La Llista es pot eliminar si està buida o si tots els seus Items estan **demanats**, sense cap quantitat pagada ni regalada registrada. El preu informat no impedeix eliminar-la. Si algun Item ja està **encarregat**, **a punt per recollir** o **recollit**, o té imports pagats o regalats, es bloqueja tota l’eliminació segons §4.5.
 
@@ -239,7 +239,7 @@ En aquest context permet actualitzar l’estat de comanda, actualitzar la situac
 
 Quan l’Item ja és a casa, el detall se centra en la preparació. Mostra l’estat de preparació (`preparada` / `no preparada`) i la data d’entrada a casa quan l’Item prové d’una Llista i ha estat recollit. En aquest context no es mostren el preu, la quantitat regalada, la quantitat pagada, la quantitat assumida, la quantitat pendent ni la situació econòmica: aquesta informació continua pertanyent al context de la Llista i l’adquisició.
 
-Si l’Item a casa prové d’una Llista, el detall manté visible el nom de la Llista d’origen i permet navegar al detall d’aquesta Llista. La procedència té un paper secundari respecte a les dades principals de l’Item i la seva preparació. L’Item continua associat a la Llista per preservar-ne la traçabilitat. En aquest context es permet marcar l’Item com a preparat, editar-lo i eliminar-lo. Si prové d’una Llista i és **recollit**, també es pot accedir a corregir l’estat de comanda, sense fer editables les dates ni mostrar informació econòmica al detall principal de casa.
+Si l’Item a casa prové d’una Llista, el detall manté visible el nom de la Llista d’origen i permet navegar al detall d’aquesta Llista. La procedència té un paper secundari respecte a les dades principals de l’Item i la seva preparació. L’Item continua associat a la Llista per conservar-ne el context i la procedència de Llista. En aquest context es permet marcar l’Item com a preparat, editar-lo i eliminar-lo. Si prové d’una Llista i és **recollit**, també es pot accedir a corregir l’estat de comanda, sense fer editables les dates ni mostrar informació econòmica al detall principal de casa.
 
 #### Actualització i correcció de comanda
 
