@@ -511,7 +511,7 @@ La BD PostgreSQL de test està separada de la de desenvolupament manual. Els tes
 
 Ha de permetre preparar dades controlades, executar operacions destructives i proves DELETE/CASCADE/RESTRICT, i reinicialitzar o netejar l’estat. Les proves han de ser repetibles i independents de les dades manuals.
 
-A12 proporciona PostgreSQL mitjançant serveis Docker independents: `postgres-dev` amb `nestly_dev` i `postgres-test` amb `nestly_test`. Desenvolupament i test no comparteixen servei; el de test es pot reinicialitzar o destruir sense afectar desenvolupament i només necessita estar actiu quan s’executen proves que el requereixen. El mecanisme exacte de reset, fixtures, scripts i lifecycle queda per a la implementació.
+Segons el refinament de M0.2 a A12 (§13.3), `nestly_dev` i `nestly_test` són bases de dades separades dins d’una única instància PostgreSQL local. Les operacions destructives i el reset dels tests s’han de limitar a `nestly_test`, sense afectar les dades de desenvolupament; no impliquen destruir el container o el volum compartits. El mecanisme exacte de reset, fixtures, scripts i lifecycle queda per a la implementació.
 
 ### 12.6. Tests HTTP / API
 
@@ -564,7 +564,7 @@ S’adopten aquestes eines segons el criteri de dependències d’A10:
 
 ### 12.11. Límits d’A11
 
-No es defineixen encara carpetes de tests, noms de fitxers o convencions de naming, scripts de package.json, configuracions de Vitest o Playwright, fixtures, factories/builders, implementació de mocks/fakes ni dades seed definitives. Són detalls d’implementació, igual que el mecanisme exacte de reset i lifecycle. A12 ja resol la provisió de PostgreSQL de test amb un servei Docker independent i reinicialitzable sense afectar desenvolupament. No es dissenya CI/CD sense una necessitat posterior.
+No es defineixen encara carpetes de tests, noms de fitxers o convencions de naming, scripts de package.json, configuracions de Vitest o Playwright, fixtures, factories/builders, implementació de mocks/fakes ni dades seed definitives. Són detalls d’implementació, igual que el mecanisme exacte de reset i lifecycle. A12 ja resol la provisió de PostgreSQL de test amb una base de dades separada dins de la mateixa instància local, reinicialitzable sense afectar les dades de desenvolupament. No es dissenya CI/CD sense una necessitat posterior.
 
 A11 no imposa un nombre exacte d’E2E ni un percentatge obligatori de coverage.
 
@@ -593,12 +593,16 @@ La configuració variable utilitza environment variables. El `.env` local no es 
 
 Docker proporciona PostgreSQL de manera reproduïble. React i Express s’executen localment en V1, sense containerització preventiva. No es containeritza el backend només per resoldre HEIC/HEIF; aquesta possibilitat només es reconsideraria en el futur si apareguessin altres necessitats que la justifiquessin.
 
-| Entorn | Servei PostgreSQL independent | Base de dades |
-| --- | --- | --- |
-| Development | `postgres-dev` | `nestly_dev` |
-| Test | `postgres-test` | `nestly_test` |
+| Entorn | Base de dades dins de la mateixa instància |
+| --- | --- |
+| Development | `nestly_dev` |
+| Test | `nestly_test` |
 
-L’entorn de test pot ser destructiu i reinicialitzable sense afectar les dades de desenvolupament. El servei de test només necessita estar actiu quan s’executen tests que requereixen PostgreSQL. El reset, les fixtures i el lifecycle exactes es concretaran durant la implementació.
+M0.2 refina la decisió anterior de dos serveis: per a un projecte local individual, dues bases de dades amb dades independents dins d’una mateixa instància proporcionen l’aïllament de dades necessari entre desenvolupament i tests sense mantenir dos processos PostgreSQL. És un refinament arquitectònic en arribar al detall d’implementació, no la correcció d’un error.
+
+S’utilitza una única instància/container de **PostgreSQL 18**, gestionada amb **Docker Compose**, sense utilitzar `latest`. Un **Docker named volume** persisteix les dades fora del cicle de vida del container. `nestly_test` es crea automàticament durant la inicialització d’un entorn PostgreSQL nou, sense cap pas manual.
+
+La configuració i les credencials locals provenen de variables d’entorn: `.env` no es versiona i `.env.example` documenta la configuració necessària, sense secrets, i sí es versiona. En arribar a migracions, el mateix esquema i historial s’aplicarà a totes dues bases segons §13.4. El reset de test es limita a `nestly_test`; les fixtures i el lifecycle exactes es concretaran durant la implementació.
 
 ### 13.4. Migracions
 
@@ -657,7 +661,7 @@ La tria de llibreries de validació i logging i la implementació concreta del m
 
 Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets, el detall de carpetes i la configuració del frontend. També la validació concreta de configuració, el mecanisme d’arrencada/aturada i els paràmetres configurables de qualitat/compressió de fotografies. No es generen codi, configuracions executables, Docker Compose, migracions ni package.json en aquesta fase.
 
-Els detalls de testing enumerats a §12.11 continuen oberts, inclosos reset, fixtures, scripts i lifecycle. La provisió amb serveis PostgreSQL Docker independents ja està resolta a §13.3.
+Els detalls de testing enumerats a §12.11 continuen oberts, inclosos reset, fixtures, scripts i lifecycle. La provisió amb dues bases de dades separades dins d’una única instància PostgreSQL Docker ja està resolta a §13.3.
 
 ## 15. Observacions de coherència documental
 

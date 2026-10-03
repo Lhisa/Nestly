@@ -34,14 +34,14 @@ El backend mínim incorpora Node.js, Express i TypeScript, mantenint la separaci
 
 ### 3.3. PostgreSQL i esquema complet
 
-PostgreSQL s’executa amb Docker en dos serveis independents:
+PostgreSQL s’executa en una única instància/container local gestionada amb Docker Compose, amb dues bases de dades separades i dades independents, segons el refinament de M0.2 a [A12 §13.3](./arquitectura-v1.md#133-postgresql-i-docker):
 
-| Entorn | Servei | Base de dades |
-| --- | --- | --- |
-| Development | `postgres-dev` | `nestly_dev` |
-| Test | `postgres-test` | `nestly_test` |
+| Entorn | Base de dades |
+| --- | --- |
+| Development | `nestly_dev` |
+| Test | `nestly_test` |
 
-React i Express s’executen localment. El servei de test s’utilitza quan cal i es pot reinicialitzar sense afectar desenvolupament.
+React i Express s’executen localment. El reset de test es limita a `nestly_test`, sense afectar les dades de desenvolupament ni destruir el container o el volum compartits.
 
 Com a excepció explícita a la incorporació funcional progressiva, M0 crea l’estructura completa de les set taules V1: `categoria`, `subcategoria`, `item`, `recomanacio`, `botiga`, `llista_nado` i `item_llista`.
 
