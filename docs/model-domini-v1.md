@@ -51,7 +51,7 @@ Categories i Subcategories són dades predefinides que l’Usuari no crea, modif
 
 #### Catàleg inicial predefinit de V1
 
-Aquest és el catàleg inicial aprovat. És una decisió funcional: les Categories/Subcategories són dades base de Nestly, no dades personals ni fixtures de desenvolupament o test, i han d’estar disponibles de manera reproduïble en una instal·lació nova. El mecanisme tècnic de càrrega es decidirà durant M0 del [pla d’implementació](./pla-implementacio-v1.md).
+Aquest és el catàleg inicial aprovat. És una decisió funcional: les Categories/Subcategories són dades base obligatòries de Nestly V1, no dades personals ni fixtures de desenvolupament o test, i han d’estar disponibles de manera reproduïble en una instal·lació nova. El mecanisme tècnic de càrrega mitjançant migracions versionades està documentat a M0.4 del [pla d’implementació, §3.4](./pla-implementacio-v1.md#34-categories-i-subcategories-predefinides).
 
 | Categoria | Subcategories |
 | --- | --- |

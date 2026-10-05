@@ -47,15 +47,15 @@ Com a excepció explícita a la incorporació funcional progressiva, M0 crea l�
 
 Les migracions respecten A07: relacions, cardinalitats, FK, UNIQUE, CHECK, CASCADE/RESTRICT, identificadors, estats, dates, nul·labilitat i imports. Es manté NUMERIC(7,2), sense persistir imports derivats ni totals. Les invariants entre taules que A07 atribueix a Domain/Application no es converteixen en nous CHECK ni autoritzen implementar ara els casos d’ús futurs.
 
-S’utilitza node-pg-migrate, amb el mateix historial versionat per a development i test i preferència per SQL explícit, sense ORM. El mecanisme concret es decideix durant M0. L’esquema pot evolucionar mitjançant noves migracions si apareix una necessitat real; la primera migració no es considera immutable per principi. Qualsevol necessitat de reconsiderar una decisió tancada s’ha de revisar abans de canviar-la.
+S’utilitza node-pg-migrate, amb el mateix historial versionat per a development i test i preferència per SQL explícit, sense ORM. Una migració es pot ajustar mentre està en desenvolupament i encara no s’ha consolidat com a part de l’historial aplicat. Un cop aplicada i consolidada, es considera immutable. `001_create_initial_schema.sql` ja està aplicada i consolidada i no s’ha de modificar. Qualsevol canvi posterior de l’esquema o del catàleg base es fa mitjançant una nova migració. Qualsevol necessitat de reconsiderar una decisió tancada s’ha de revisar abans de canviar-la.
 
 ### 3.4. Categories i Subcategories predefinides
 
-Una instal·lació nova ha de disposar de les dades base necessàries de manera reproduïble, sense INSERT manuals. Categories i Subcategories no són dades personals ni fixtures de test, i no tenen gestió per l’Usuari en V1.
+Una instal·lació nova ha de disposar de les dades base necessàries de manera reproduïble, sense INSERT manuals. El catàleg inicial de Categories i Subcategories és dada base obligatòria de Nestly V1, no seed data de desenvolupament ni fixtures de test, i no té gestió per l’Usuari en V1.
 
-Durant M0 s’analitzarà i decidirà el mecanisme proporcional per proporcionar-les: migració, seed o alternativa justificada. Aquest pla no el fixa.
+La decisió de M0.4 és carregar el catàleg mitjançant la migració versionada `backend/migrations/002_insert_initial_catalog.sql`, dins del mateix historial de development i test. Insereix 8 Categories i 41 Subcategories i obté els IDs de Categoria pel nom, sense hardcodejar-los. No s’introdueixen seeds separats. Un cop tancada M0.4, aquesta migració queda aplicada i consolidada i passa a formar part de l’historial immutable. Els futurs canvis del catàleg es faran amb migracions noves, sense modificar migracions ja aplicades i consolidades.
 
-El catàleg inicial complet ja està aprovat i es defineix al [model de domini, §4.2](./model-domini-v1.md#catàleg-inicial-predefinit-de-v1), inclosa la Categoria i Subcategoria **Pendent de classificar**. M0 ha de proporcionar aquest catàleg sense ampliar-lo ni reorganitzar-lo. Només queda pendent decidir el mecanisme tècnic reproduïble de càrrega.
+El catàleg inicial complet ja està aprovat i es defineix al [model de domini, §4.2](./model-domini-v1.md#catàleg-inicial-predefinit-de-v1), inclosa la Categoria i Subcategoria **Pendent de classificar**. M0 proporciona aquest catàleg sense ampliar-lo ni reorganitzar-lo.
 
 ### 3.5. Configuració i execució local
 
@@ -181,8 +181,7 @@ No s’ha identificat una contradicció que exigeixi modificar les fonts de veri
 
 Queden deliberadament per a la implementació:
 
-- **Abans de carregar dades base a M0:** analitzar i decidir el mecanisme tècnic reproduïble per proporcionar el catàleg de Categories/Subcategories ja aprovat al model de domini.
-- **Durant M0:** mecanisme concret de migracions, arrencada/aturada, configuració essencial i detall mínim d’organització, sense alterar A05/A12.
+- **Durant M0:** arrencada/aturada, configuració essencial i detall mínim d’organització, sense alterar A05/A12.
 - **Quan les proves ho requereixin:** fixtures, reset, lifecycle, aïllament de fitxers i configuració de les eines de testing adoptades.
 - **Durant M1:** detall dels contractes necessaris, composició del formulari i consultes, implementació del pipeline i ajust configurable de qualitat/compressió amb fotografies reals, sense fixar abstraccions o versions en aquest pla.
 - **Després de M1:** ordre i dimensió dels slices següents, mantenint les dependències funcionals i tot l’abast V1.
