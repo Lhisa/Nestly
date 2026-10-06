@@ -6,7 +6,7 @@ Aquest document recull les decisions arquitectòniques validades A01–A12 de Ne
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Amb A12 i la revisió de coherència de §15, l’Arquitectura V1 A01–A12 queda finalitzada al nivell arquitectònic. Els detalls d’implementació de §14 no es consideren resolts per aquest tancament. La implementació encara no s’ha iniciat.
+Amb A12 i la revisió de coherència de §15, l’Arquitectura V1 A01–A12 queda finalitzada al nivell arquitectònic. Els detalls d’implementació de §14 no es consideren resolts per aquest tancament. La implementació ja s’ha iniciat: M0.1–M0.4 estan executats i tancats; M0.5 — Application Shell està tancat/completat.
 
 ## 2. A01 — Arquitectura general
 
@@ -665,7 +665,7 @@ Els detalls de testing enumerats a §12.11 continuen oberts, inclosos reset, fix
 
 ## 15. Observacions de coherència documental
 
-- `AGENTS.md` reflecteix el treball de UI/UX, el tancament d’Arquitectura A01–A12 i que la implementació encara no s’ha iniciat; es mantenen els principis i el workflow.
+- `AGENTS.md` reflecteix el treball de UI/UX, el tancament d’Arquitectura A01–A12 i l’estat de la implementació: M0.1–M0.4 tancats i M0.5 — Application Shell tancat/completat; es mantenen els principis i el workflow.
 - UI/UX §9 referencia les decisions tècniques de fotografies d’A09 completades per A12 i la representació de `data_creacio` resolta a A07. La presentació UX no canvia.
 - La previsualització econòmica local d’A12 concreta el punt pendent d’A10: és feedback UX, mentre que la resposta del backend continua sent autoritativa en Crear/Desar.
 - **Compatibilitat HEIC/HEIF resolta arquitectònicament:** es manté RF-01b. Quan Sharp no pugui decodificar aquestes entrades de manera fiable en l’entorn local, libheif-js les decodifica i el resultat continua pel pipeline de Sharp fins a WebP. La responsabilitat queda a Infrastructure (§10.3–§10.9), sense containeritzar el backend ni alterar l’execució local d’A12.

@@ -1,0 +1,29 @@
+/* Estils funcionals de M0.5; no defineixen el disseny visual definitiu. */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: sans-serif; line-height: 1.5; }
+a:focus-visible, main:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.standalone-page, .shell-content { padding: 1rem; overflow-wrap: anywhere; }
+.application-shell { min-height: 100dvh; display: flex; flex-direction: column; }
+.shell-content { flex: 1; min-width: 0; }
+.desktop-navigation { display: none; }
+.mobile-navigation {
+  position: sticky;
+  bottom: 0;
+  order: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: white;
+  border-top: 1px solid;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+nav a { display: block; padding: 0.75rem 0.5rem; }
+.mobile-navigation a { text-align: center; }
+nav a.active { font-weight: bold; text-decoration-thickness: 3px; }
+.skip-link { position: absolute; top: 0; left: 1rem; transform: translateY(-150%); }
+.skip-link:focus { transform: none; background: white; padding: 0.5rem; z-index: 1; }
+/* Breakpoint provisional i revisable. */
+@media (min-width: 48rem) {
+  .application-shell { flex-direction: row; }
+  .desktop-navigation { display: flex; flex-direction: column; flex: 0 0 13rem; border-right: 1px solid; }
+  .mobile-navigation { display: none; }
+}

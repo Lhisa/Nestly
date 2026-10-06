@@ -51,9 +51,9 @@ El mateix Item conserva un únic detall conceptual. Des d’una Llista es pot co
 
 ### 3.1. Portada
 
-La primera pantalla de la V1 és la portada de **Nestly Central**. Actua com a entrada visual a l’aplicació i evita accedir directament al Dashboard.
+L’entrada per l’arrel de l’aplicació mostra la portada de **Nestly Central**. Actua com a entrada visual al Dashboard, sense impedir l’accés directe a les rutes internes.
 
-Inclou una acció d’entrada, com ara **Entrar**, que condueix al Dashboard. La V1 no inclou autenticació, pantalla de *login*, perfil d’Usuari, avatar ni opcions de compte. L’autenticació i la gestió d’usuaris són possibles evolucions futures, fora de l’abast d’aquest disseny.
+Inclou una acció d’entrada, com ara **Entrar**, que condueix al Dashboard. La Portada és una experiència separada del shell, però no una barrera obligatòria: es pot accedir directament a una secció interna i refrescar-la sense tornar a la Portada. A M0.5 és mínima; el high-fi i l’animació definitiva de «passar pàgina» es decidiran més endavant. La V1 no inclou autenticació, pantalla de *login*, perfil d’Usuari, avatar ni opcions de compte. L’autenticació i la gestió d’usuaris són possibles evolucions futures, fora de l’abast d’aquest disseny.
 
 ### 3.2. Dashboard
 
@@ -298,7 +298,7 @@ En intentar abandonar un formulari sense haver-hi fet canvis, es pot sortir dire
 
 En mòbil, la bottom navigation conté **Inici**, **Items**, **Llistes** i **Més**. **Inici** dona accés al Dashboard; **Més** és una pantalla pròpia, no un bottom sheet, amb accés a Recomanacions i Botigues. És una agrupació de navegació, no un nou cas d’ús.
 
-En desktop, una sidebar permanent dona accés a les seccions principals. Es manté l’experiència completa en ambdós contextos, sense definir breakpoints concrets.
+En desktop, una sidebar permanent dona accés a Inici, Items, Llistes, Recomanacions i Botigues. Més no necessita aparèixer al sidebar, però la seva pantalla continua accessible. En mòbil, Més es considera actiu també mentre es visita Recomanacions o Botigues. Es manté l’experiència completa en ambdós contextos, sense definir breakpoints definitius; M0.5 pot utilitzar un breakpoint CSS provisional i revisable.
 
 ### 4.4. Filtres en mòbil
 

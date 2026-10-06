@@ -2,7 +2,7 @@
 
 ## 1. Objectiu, estat i fonts
 
-Aquest pla proposa l’ordre d’implementació de Nestly V1 mitjançant increments petits i verificables. **Està pendent de revisió i aprovació humana; no autoritza iniciar M0.** No modifica decisions funcionals, de domini, UI/UX o arquitectura.
+Aquest pla proposa l’ordre d’implementació de Nestly V1 mitjançant increments petits i verificables. **La implementació ja s’ha iniciat: M0.1–M0.4 estan executats i tancats; M0.5 — Application Shell està tancat/completat. Els increments següents continuen subjectes a revisió humana.** No modifica decisions funcionals, de domini, UI/UX o arquitectura.
 
 Les fonts de veritat són [AGENTS.md](../AGENTS.md), [Idea V1](./idea-v1.md), [Requisits V1](./requisits-v1.md), [Model de domini V1](./model-domini-v1.md), [Casos d’ús V1](./casos-us-v1.md), [Disseny UI/UX V1](./disseny-ui-ux-v1.md) i [Arquitectura V1](./arquitectura-v1.md). Els wireframes s’interpreten amb les actualitzacions i observacions de la documentació UI/UX.
 
@@ -28,7 +28,7 @@ Landing i Dashboard són estructura i navegació mínima, sense mètriques o dad
 
 Es manté un únic repositori amb `frontend/`, `backend/` i `docs/`, segons A12. El backend respecta les responsabilitats `domain`, `application`, `infrastructure` i `http` d’A05; el frontend s’organitza principalment per features segons A10. Això no exigeix crear carpetes buides ni ports, repositories, factories, helpers o components preventius.
 
-El frontend mínim incorpora React, TypeScript, React Router i TanStack Query. React Hook Form s’incorpora quan existeixi el primer formulari real que el necessiti, no per preparar formularis futurs a M0.
+El frontend mínim de M0.5 incorpora React, TypeScript i React Router. TanStack Query s’incorporarà just-in-time quan existeixi server state real. React Hook Form s’incorpora quan existeixi el primer formulari real que el necessiti, no per preparar formularis futurs a M0.
 
 El backend mínim incorpora Node.js, Express i TypeScript, mantenint la separació de responsabilitats. No s’implementen CRUD ni endpoints per totes les entitats. No s’introdueixen workspaces, packages compartits preventius ni infraestructura de monorepo.
 
@@ -72,6 +72,29 @@ M0 ha de deixar un mecanisme senzill d’arrencada que eviti iniciar manualment 
 - Reinicialitzar test no afecta les dades de development.
 
 Només s’instal·len les eines de testing necessàries per aquestes verificacions. Vitest és el runner adoptat; Supertest s’incorpora quan hi hagi un contracte HTTP a provar, React Testing Library quan calgui verificar comportament de components i Playwright quan existeixi un flux E2E que ho justifiqui. No s’instal·len totes les eines per anticipació ni s’imposen tots els nivells a M0.
+
+### 3.7. M0.5 — Application Shell
+
+M0.5 construeix només l’esquelet funcional de navegació, amb placeholders explícits i sense dades fictícies, formularis, estadístiques o connexió al backend. La Portada mínima és fora de l’ApplicationShell i permet entrar a Inici. No és una barrera: les rutes internes admeten accés directe i recàrrega sense redirigir a la Portada.
+
+| Ruta | Pantalla |
+| --- | --- |
+| `/` | Portada |
+| `/inici` | Dashboard/Inici pendent d’implementar |
+| `/items` | Items |
+| `/llistes` | Llistes |
+| `/recomanacions` | Recomanacions |
+| `/botigues` | Botigues |
+| `/mes` | Més, amb accessos a Recomanacions i Botigues |
+| URL desconeguda | 404 amb retorn a Inici |
+
+Les rutes internes comparteixen un shell. Desktop té sidebar permanent amb Inici, Items, Llistes, Recomanacions i Botigues; `/mes` continua accessible però no apareix al sidebar. Mòbil té navegació inferior amb Inici, Items, Llistes i Més. Més es considera actiu a `/mes`, `/recomanacions` i `/botigues`.
+
+El CSS és mínim i funcional, amb comportament responsive provisional i revisable, focus visible i navegació oculta fora de l’ordre de teclat. La navegació mòbil inferior té el seu espai i no se superposa al contingut. No es defineix high-fi, design system ni l’animació definitiva de Portada. La 404 es renderitza dins del shell per conservar els accessos coneguts.
+
+M0.5 es valida amb les comprovacions manuals i tècniques actuals: tipus, build, les rutes, navegació responsive i activa, Més, historial, accés directe/recàrrega i teclat. No s’introdueixen Vitest, React Testing Library ni altres dependències o infraestructura de testing frontend en aquesta fita. El testing frontend s’introduirà just-in-time durant M1, quan existeixi funcionalitat real que justifiqui protegir comportaments amb tests.
+
+**M0.5 — Application Shell: tancat/completat**, amb code review funcional aprovat. El tancament de M0.5 no implica el tancament de tot M0. El commit i el push queden pendents de la revisió final i d’autorització explícita.
 
 ## 4. M1 — Registrar i consultar Items que ja són a casa
 
@@ -186,4 +209,4 @@ Queden deliberadament per a la implementació:
 - **Durant M1:** detall dels contractes necessaris, composició del formulari i consultes, implementació del pipeline i ajust configurable de qualitat/compressió amb fotografies reals, sense fixar abstraccions o versions en aquest pla.
 - **Després de M1:** ordre i dimensió dels slices següents, mantenint les dependències funcionals i tot l’abast V1.
 
-El pla queda sotmès a revisió humana. No s’inicia M0 fins que la persona usuària l’hagi revisat i aprovat.
+El pla continua sotmès a revisió humana per als increments pendents. M0.1–M0.4 estan tancats i M0.5 — Application Shell està tancat/completat. El commit i el push de M0.5 continuen pendents de la revisió final i d’autorització explícita.
