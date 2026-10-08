@@ -6,7 +6,7 @@ Aquest document recull les decisions arquitectòniques validades A01–A12 de Ne
 
 La font de veritat funcional continua sent [Requisits](./requisits-v1.md), [Model de domini](./model-domini-v1.md), [Casos d’ús](./casos-us-v1.md) i [Disseny UI/UX](./disseny-ui-ux-v1.md). L’arquitectura concreta com donar suport a aquestes regles, sense substituir-les ni introduir funcionalitats.
 
-Amb A12 i la revisió de coherència de §15, l’Arquitectura V1 A01–A12 queda finalitzada al nivell arquitectònic. Els detalls d’implementació de §14 no es consideren resolts per aquest tancament. La implementació ja s’ha iniciat: M0.1–M0.4 estan executats i tancats; M0.5 — Application Shell està tancat/completat.
+Amb A12 i la revisió de coherència de §15, l’Arquitectura V1 A01–A12 queda finalitzada al nivell arquitectònic. Els detalls d’implementació de §14 no es consideren resolts per aquest tancament. M0 està completada, amb tots els criteris obligatoris verificats. La següent fita és M1 — Registrar i consultar Items que ja són a casa. L’estat i les evidències es mantenen al [pla d’implementació](./pla-implementacio-v1.md).
 
 ## 2. A01 — Arquitectura general
 
@@ -578,7 +578,7 @@ El backend s’organitza físicament segons les responsabilitats d’A05: `domai
 
 #### Tooling validat de M0.1
 
-S’utilitza **npm** com a gestor de paquets. `frontend/` i `backend/` són aplicacions separades dins del mateix repositori, cadascuna amb el seu propi `package.json`, sense npm workspaces ni tooling específic de monorepo.
+S’utilitza **npm** com a gestor de paquets. `frontend/` i `backend/` són aplicacions separades dins del mateix repositori, cadascuna amb el seu propi `package.json`, sense npm workspaces ni tooling específic de monorepo. M0.6 afegeix un `package.json` a l’arrel exclusivament per al launcher local, sense dependències ni workspaces.
 
 | Aplicació | Stack existent | Tooling de desenvolupament i build |
 | --- | --- | --- |
@@ -602,11 +602,11 @@ M0.2 refina la decisió anterior de dos serveis: per a un projecte local individ
 
 S’utilitza una única instància/container de **PostgreSQL 18**, gestionada amb **Docker Compose**, sense utilitzar `latest`. Un **Docker named volume** persisteix les dades fora del cicle de vida del container. `nestly_test` es crea automàticament durant la inicialització d’un entorn PostgreSQL nou, sense cap pas manual.
 
-La configuració i les credencials locals provenen de variables d’entorn: `.env` no es versiona i `.env.example` documenta la configuració necessària, sense secrets, i sí es versiona. En arribar a migracions, el mateix esquema i historial s’aplicarà a totes dues bases segons §13.4. El reset de test es limita a `nestly_test`; les fixtures i el lifecycle exactes es concretaran durant la implementació.
+La configuració i les credencials locals provenen de variables d’entorn: `.env` no es versiona i `.env.example` documenta la configuració necessària, sense secrets, i sí es versiona. M0 ha aplicat i verificat el mateix esquema i historial a totes dues bases segons §13.4. El reset de test es limita a `nestly_test`; les fixtures i el lifecycle exactes es concretaran durant la implementació.
 
 ### 13.4. Migracions
 
-S’adopta **node-pg-migrate** com a runner. Les migracions es versionen amb el projecte i el mateix historial s’ha de poder aplicar a development i test. Es prefereix SQL explícit dins del sistema de migracions, en coherència amb A04 i l’objectiu educatiu de treballar directament amb PostgreSQL/SQL. No s’introdueix un ORM ni s’implementen migracions en aquesta fase.
+S’adopta **node-pg-migrate** com a runner. Les migracions es versionen amb el projecte i el mateix historial s’ha de poder aplicar a development i test. Es prefereix SQL explícit dins del sistema de migracions, en coherència amb A04 i l’objectiu educatiu de treballar directament amb PostgreSQL/SQL. No s’introdueix un ORM. M0 ha consolidat les migracions SQL 001 (esquema) i 002 (catàleg) als dos entorns. Les instruccions operatives i la limitació dels scripts down, que no constitueixen un reset, es documenten a [Arrencada local](./arrencada-local.md).
 
 ### 13.5. Representació dels diners
 
@@ -651,7 +651,7 @@ A12 resol la previsualització econòmica local no autoritativa del formulari a 
 
 V1 és local i reproduïble. No inclou desplegar Nestly públicament a Internet: no es dissenyen hosting cloud, PostgreSQL gestionat, object storage, domini, HTTPS de producció, infraestructura de producció ni CI/CD sense una necessitat posterior. Els uploads continuen al filesystem local segons A09.
 
-Nestly ha de disposar d’un mecanisme senzill d’arrencada que eviti iniciar manualment cada component per separat. El mecanisme concret d’arrencada/aturada es definirà durant la implementació. Això no converteix Nestly en una aplicació desktop ni introdueix Electron, Windows Services, systemd o infraestructura similar.
+Nestly ha de disposar d’un mecanisme senzill d’arrencada que eviti iniciar manualment cada component per separat. M0.6 concreta aquest mecanisme amb `npm run dev` i cleanup amb Ctrl+C; les instruccions i limitacions es mantenen a [Arrencada local](./arrencada-local.md). Això no converteix Nestly en una aplicació desktop ni introdueix Electron, Windows Services, systemd o infraestructura similar.
 
 ## 14. Detalls oberts d’implementació
 
@@ -659,17 +659,17 @@ A01–A12 tanquen l’Arquitectura V1. Els punts següents es concretaran quan s
 
 La tria de llibreries de validació i logging i la implementació concreta del mecanisme transaccional no queden fixades per A08.
 
-Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets, el detall de carpetes i la configuració del frontend. També la validació concreta de configuració, el mecanisme d’arrencada/aturada i els paràmetres configurables de qualitat/compressió de fotografies. No es generen codi, configuracions executables, Docker Compose, migracions ni package.json en aquesta fase.
+Queden per concretar les rutes exhaustives, les query keys, els hooks i components concrets, el detall de carpetes i la configuració del frontend. També la validació de configuració que necessitin els futurs recorreguts funcionals i els paràmetres configurables de qualitat/compressió de fotografies. M0 ha concretat el shell, Docker Compose, les migracions i l’arrencada/aturada local; aquest document recull les decisions arquitectòniques, no el codi executable.
 
-Els detalls de testing enumerats a §12.11 continuen oberts, inclosos reset, fixtures, scripts i lifecycle. La provisió amb dues bases de dades separades dins d’una única instància PostgreSQL Docker ja està resolta a §13.3.
+Els detalls d’automatització de testing enumerats a §12.11 continuen oberts, inclosos fixtures, scripts i lifecycle. M0 ha verificat el reset controlat de nestly_test i l’aïllament de development; això no introdueix un script automatitzat de reset. La provisió amb dues bases de dades separades dins d’una única instància PostgreSQL Docker ja està resolta a §13.3.
 
 ## 15. Observacions de coherència documental
 
-- `AGENTS.md` reflecteix el treball de UI/UX, el tancament d’Arquitectura A01–A12 i l’estat de la implementació: M0.1–M0.4 tancats i M0.5 — Application Shell tancat/completat; es mantenen els principis i el workflow.
+- `AGENTS.md` reflecteix el treball de UI/UX, el tancament d’Arquitectura A01–A12 i l’estat de la implementació: M0 completada i M1 com a següent fita; es mantenen els principis i el workflow.
 - UI/UX §9 referencia les decisions tècniques de fotografies d’A09 completades per A12 i la representació de `data_creacio` resolta a A07. La presentació UX no canvia.
 - La previsualització econòmica local d’A12 concreta el punt pendent d’A10: és feedback UX, mentre que la resposta del backend continua sent autoritativa en Crear/Desar.
 - **Compatibilitat HEIC/HEIF resolta arquitectònicament:** es manté RF-01b. Quan Sharp no pugui decodificar aquestes entrades de manera fiable en l’entorn local, libheif-js les decodifica i el resultat continua pel pipeline de Sharp fins a WebP. La responsabilitat queda a Infrastructure (§10.3–§10.9), sense containeritzar el backend ni alterar l’execució local d’A12.
 - El resum A07 utilitza 1:N per a Subcategoria–Item i Llista–ITEM_LLISTA, mentre que el domini explicita 1:0..N. A §8.2 es conserva expressament l’opcionalitat funcional, sense imposar un mínim d’un Item.
 - La cadena de responsabilitats d’A05 no implica que Domain depengui d’Infrastructure: aquesta lectura contradiria el límit explícit que impedeix al domini conèixer PostgreSQL o accedir a dades. §6 distingeix responsabilitats i dependències.
 
-No s’han modificat regles funcionals ni s’han generat migracions, sentències de creació de taules o codi. UI/UX referencia les decisions tècniques de fotografia resoltes a A09.
+La definició arquitectònica no modifica regles funcionals ni constitueix codi executable; les migracions i el shell s’han implementat i verificat durant M0. UI/UX referencia les decisions tècniques de fotografia resoltes a A09.

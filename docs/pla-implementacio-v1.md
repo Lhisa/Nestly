@@ -2,7 +2,7 @@
 
 ## 1. Objectiu, estat i fonts
 
-Aquest pla proposa l’ordre d’implementació de Nestly V1 mitjançant increments petits i verificables. **La implementació ja s’ha iniciat: M0.1–M0.4 estan executats i tancats; M0.5 — Application Shell està tancat/completat. Els increments següents continuen subjectes a revisió humana.** No modifica decisions funcionals, de domini, UI/UX o arquitectura.
+Aquest pla proposa l’ordre d’implementació de Nestly V1 mitjançant increments petits i verificables. **M0 — Fonaments tècnics mínims i shell està completada: M0.1–M0.6 estan implementats i tots els criteris obligatoris estan verificats. Els increments següents continuen subjectes a revisió humana.** No modifica decisions funcionals, de domini, UI/UX o arquitectura.
 
 Les fonts de veritat són [AGENTS.md](../AGENTS.md), [Idea V1](./idea-v1.md), [Requisits V1](./requisits-v1.md), [Model de domini V1](./model-domini-v1.md), [Casos d’ús V1](./casos-us-v1.md), [Disseny UI/UX V1](./disseny-ui-ux-v1.md) i [Arquitectura V1](./arquitectura-v1.md). Els wireframes s’interpreten amb les actualitzacions i observacions de la documentació UI/UX.
 
@@ -61,7 +61,7 @@ El catàleg inicial complet ja està aprovat i es defineix al [model de domini, 
 
 Es prepara el mínim necessari per utilitzar environment variables, `.env` local no versionat, `.env.example` sense secrets, configuracions separades development/test i validació de configuració essencial en arrencar. No es tria preventivament una llibreria de validació.
 
-M0 ha de deixar un mecanisme senzill d’arrencada que eviti iniciar manualment cada component per separat. El mecanisme concret d’arrencada/aturada es decideix durant M0. No s’introdueixen Electron, serveis de sistema, infraestructura cloud ni containerització del backend.
+M0.6 implementa `npm run dev` a l’arrel amb Node.js 24, sense dependències addicionals. El launcher espera PostgreSQL healthy i inicia Express i Vite localment. `Ctrl+C` executa el cleanup; PostgreSQL només s’atura si l’ha iniciat el launcher, després de verificar-ne la identitat i propietat. La primera instal·lació, les migracions manuals i les limitacions es documenten a [Arrencada local](./arrencada-local.md). No s’introdueixen Electron, serveis de sistema, infraestructura cloud ni containerització del backend.
 
 ### 3.6. Verificació i criteris de sortida
 
@@ -94,7 +94,25 @@ El CSS és mínim i funcional, amb comportament responsive provisional i revisab
 
 M0.5 es valida amb les comprovacions manuals i tècniques actuals: tipus, build, les rutes, navegació responsive i activa, Més, historial, accés directe/recàrrega i teclat. No s’introdueixen Vitest, React Testing Library ni altres dependències o infraestructura de testing frontend en aquesta fita. El testing frontend s’introduirà just-in-time durant M1, quan existeixi funcionalitat real que justifiqui protegir comportaments amb tests.
 
-**M0.5 — Application Shell: tancat/completat**, amb code review funcional aprovat. El tancament de M0.5 no implica el tancament de tot M0. El commit i el push queden pendents de la revisió final i d’autorització explícita.
+**M0.5 — Application Shell: tancat/completat**, amb code review funcional aprovat i versionat al commit `38fb603848e8e4d195e677b8abb0e75a00258f04`.
+
+### 3.8. M0.6 i revisió de tancament de M0 — 2026-10-08
+
+**M0.6 — Verificació integral i orquestrador local: completada. M0 — Fonaments tècnics mínims i shell: completada**, amb tots els criteris obligatoris verificats. El commit i el push de M0.6 i del tancament documental continuen pendents de revisió final i autorització explícita.
+
+L’Usuària ha verificat manualment en PowerShell habitual l’arrencada conjunta, PostgreSQL healthy, Express al port 3000, Vite al 5173 i el cleanup amb Ctrl+C, amb ports sense listeners i PostgreSQL Exited (0). La incidència observada al terminal de Codex no s’ha reproduït en aquesta prova; la causa no està demostrada.
+
+| Criteri de §3.6 | Evidència de verificació |
+| --- | --- |
+| Recorregut del shell | Portada → Inici → Items, rutes internes i navegació mòbil comprovats en navegador real, amb placeholders explícits. |
+| Arrencada reproduïble i configuració sense secrets versionats | npm ci, dependències, typecheck/build i prova manual en PowerShell habitual; fitxers .env locals ignorats, només exemples versionats. |
+| Mateix historial, esquema V1 i restriccions en PostgreSQL real | Esquema i catàlegs comparats a dev/test amb les migracions; proves efectives en bases temporals de NOT NULL, UNIQUE, FK, CHECK, límits NUMERIC, RESTRICT (23001 amb registres conservats) i CASCADE (dependents eliminats, registres no relacionats conservats). |
+| Catàleg en una instal·lació nova sense SQL manual | Runner existent executat en base temporal buida: set taules, historial 001/002, comparació exacta de les 8 Categories i 41 Subcategories, inclòs Pendent de classificar. Segon up sense migracions pendents ni duplicats. |
+| Reinicialitzar test no afecta development | Reset exclusiu de public a nestly_test, migracions 001/002 i catàleg verificats; còpia prèviament restaurada i validada en base temporal, després restauració de l’estat original de test. Empremtes SHA-256 de development idèntiques abans/després, incloses dades, esquema, permisos, historial i seqüències. |
+
+La persistència també s’ha verificat amb consultes READ ONLY abans i després d’un cicle d’aturada/arrencada de PostgreSQL. La restauració final de test conserva dades, esquema, propietaris, permisos efectius, restriccions, índexs, historial i seqüències. S’han acceptat exclusivament tres equivalències de representació verificades: ACL NULL de public i ACL explícita amb els mateixos permisos; conversió de l’array complet o de cada literal a text en chk_item_estat_preparacio i chk_item_llista_estat_comanda. La resta de comparacions es manté estricta.
+
+PostgreSQL ha quedat Exited (0), com inicialment. Les còpies de seguretat i la base temporal de comprovació conservada són recursos locals i no formen part del repositori. La primera integració funcional frontend–backend–PostgreSQL correspon a M1 i no s’ha avançat. Les instruccions i limitacions operatives es mantenen a [Arrencada local](./arrencada-local.md).
 
 ## 4. M1 — Registrar i consultar Items que ja són a casa
 
@@ -204,9 +222,9 @@ No s’ha identificat una contradicció que exigeixi modificar les fonts de veri
 
 Queden deliberadament per a la implementació:
 
-- **Durant M0:** arrencada/aturada, configuració essencial i detall mínim d’organització, sense alterar A05/A12.
+- **Resolts a M0:** arrencada/aturada local, configuració essencial i organització mínima, sense alterar A05/A12.
 - **Quan les proves ho requereixin:** fixtures, reset, lifecycle, aïllament de fitxers i configuració de les eines de testing adoptades.
 - **Durant M1:** detall dels contractes necessaris, composició del formulari i consultes, implementació del pipeline i ajust configurable de qualitat/compressió amb fotografies reals, sense fixar abstraccions o versions en aquest pla.
 - **Després de M1:** ordre i dimensió dels slices següents, mantenint les dependències funcionals i tot l’abast V1.
 
-El pla continua sotmès a revisió humana per als increments pendents. M0.1–M0.4 estan tancats i M0.5 — Application Shell està tancat/completat. El commit i el push de M0.5 continuen pendents de la revisió final i d’autorització explícita.
+El pla continua sotmès a revisió humana per als increments pendents. M0 està completada amb tots els criteris obligatoris verificats; M1 encara no s’ha iniciat. El commit i el push de M0.6 i del tancament documental requereixen autorització explícita.

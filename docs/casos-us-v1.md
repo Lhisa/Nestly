@@ -589,4 +589,4 @@ No s’han detectat observacions pendents de resoldre amb la documentació actua
 
 ## 8. Diagrama de casos d’ús
 
-El diagrama UML de casos d’ús es generarà posteriorment a partir d’aquest catàleg validat. Haurà de representar l’actor i els objectius del sistema, no pantalles ni rutes de navegació.
+El diagrama UML de casos d’ús està disponible a [casos-us-v1.drawio](./diagrams/casos-us-v1.drawio). El seu abast és l’actor i els objectius del sistema del catàleg validat, no pantalles ni rutes de navegació.
