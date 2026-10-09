@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Nestly · Guia visual v0.1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500&amp;family=Source+Sans+3:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-background:#F0E7DD; --color-surface:#FBF8F4;
+      --color-text-primary:#49383F; --color-text-secondary:#75616B;
+      --color-action-primary:#695363; --color-on-action:#FBF8F4;
+      --color-action-hover:#5C4857; --color-action-pressed:#503E4C;
+      --color-accent-honey:#D7B16D; --color-accent-old-rose:#B58D9C;
+      --color-text-accent:#8A596C; --color-link:var(--color-text-accent);
+      --color-selected-indicator:var(--color-action-primary);
+      --color-graphic-functional:var(--color-action-primary);
+      --color-border-control:#8E7885; --color-border-subtle:#DBC5AD;
+      --color-focus-ring:var(--color-action-primary); --color-error:#8C3949;
+      --color-success-text:var(--color-text-primary);
+      --color-surface-disabled:var(--color-background); --color-text-disabled:var(--color-text-secondary);
+      --font-family-editorial:"Newsreader",Georgia,serif;
+      --font-family-functional:"Source Sans 3",system-ui,sans-serif;
+      --font-weight-regular:400; --font-weight-medium:500; --font-weight-semibold:600;
+      --font-size-small:.875rem; --font-size-body:1rem; --font-size-section:1.125rem;
+      --font-size-title:clamp(2rem,1.6rem + 1vw,2.375rem);
+      --font-size-display:clamp(2.5rem,2rem + 2vw,3rem);
+      --line-height-body:1.5; --line-height-title:1.15;
+      --space-1:.25rem; --space-2:.5rem; --space-3:.75rem; --space-4:1rem;
+      --space-5:1.5rem; --space-6:2rem; --space-7:2.5rem; --space-8:3rem;
+      --width-form-max:46rem; --width-content-max:72rem; --width-sidebar:11rem;
+      --radius-control:.5rem; --radius-container:1rem;
+      --radius-card:1.75rem; --radius-unit:1.25rem; --radius-progress:1rem;
+      --border-width-control:1px; --border-width-error:2px;
+      --focus-width:3px; --focus-offset:3px; --control-min-height:2.875rem;
+      --shadow-container:0 8px 24px rgb(73 56 63 / .04);
+      --font-size-section-editorial:1.625rem; --line-height-section-editorial:1.2;
+      --space-form-block-gap:var(--space-5); --space-form-block-padding:var(--space-5);
+      --space-form-field-gap:var(--space-5); --space-radio-card-padding:var(--space-4);
+    }
+    *{box-sizing:border-box} html{font-size:100%} body{overflow-wrap:anywhere} .cover-copy,.section-head>div{min-width:0}
+    body{margin:0;background:var(--color-background);color:var(--color-text-primary);font:var(--font-weight-regular) var(--font-size-body)/var(--line-height-body) var(--font-family-functional);font-synthesis:none}
+    h1,h2,h3,p{margin:0} h1,h2,.editorial{font-family:var(--font-family-editorial);font-weight:500;font-optical-sizing:auto;line-height:var(--line-height-title)}
+    h1{font-size:var(--font-size-display)}h2{font-size:var(--font-size-title)}h3{font-size:var(--font-size-section);font-weight:600}h3.editorial{font-weight:500}
+    p+p{margin-top:var(--space-3)}a{color:var(--color-link);text-decoration:underline;text-underline-offset:.2em}
+    button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}
+    :focus-visible,.focus-sample{outline:var(--focus-width) solid var(--color-focus-ring);outline-offset:var(--focus-offset)}
+    .skip{position:absolute;left:1rem;top:-10rem;background:var(--color-surface);padding:1rem;z-index:2}.skip:focus{top:1rem}
+    .wrap{max-width:var(--width-content-max);margin:auto;padding:var(--space-5)}
+    .masthead{display:flex;justify-content:space-between;align-items:center;gap:var(--space-4);padding-bottom:var(--space-5);flex-wrap:wrap}
+    .brand{font:500 1.75rem/1 var(--font-family-editorial)}.meta,.caption{font-size:var(--font-size-small);color:var(--color-text-secondary)}
+    .eyebrow{font-weight:600;font-size:var(--font-size-small);letter-spacing:.08em;text-transform:uppercase;margin-bottom:var(--space-3)}
+    .cover{display:grid;grid-template-columns:1.6fr 1fr;border-radius:var(--radius-container);overflow:hidden;background:var(--color-surface);box-shadow:var(--shadow-container)}
+    .cover-copy{padding:var(--space-8);display:flex;flex-direction:column;gap:var(--space-5)}.cover-copy p{max-width:38rem}
+    .cover-art{min-height:18rem;display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);padding:var(--space-6);align-items:end;background:var(--color-background)}
+    .color-shape{height:85%;border-radius:7rem 7rem 1rem 1rem;background:var(--color-accent-old-rose)}
+    .color-shape:last-child{height:60%;background:var(--color-accent-honey);border-radius:1rem 1rem 7rem 7rem}
+    .notice{border-left:3px solid var(--color-border-control);padding:var(--space-3) var(--space-4);background:var(--color-surface);margin-top:var(--space-5)}
+    .index{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4);margin:var(--space-5) 0}
+    .index a{display:inline-flex;align-items:center;min-height:44px}
+    section{margin-top:var(--space-8);scroll-margin-top:var(--space-5)}
+    .section-head{display:grid;grid-template-columns:3rem 1fr;gap:var(--space-3);margin-bottom:var(--space-5)}
+    .number{font-family:var(--font-family-editorial);font-size:1.75rem;color:var(--color-text-secondary)}.section-head p{margin-top:var(--space-2);max-width:46rem;color:var(--color-text-secondary)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-5)}.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .panel{background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:var(--radius-container);padding:var(--space-5);min-width:0;box-shadow:var(--shadow-container)}
+    .panel h3{margin-bottom:var(--space-3)}.panel .caption{margin-top:var(--space-3)}
+    .palette{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-4)}
+    .swatch{background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:var(--radius-container);overflow:hidden;min-width:0}
+    .swatch-color{height:5rem;background:var(--swatch)}.swatch-copy{padding:var(--space-3)}.swatch-copy strong{display:block}
+    code{font: .875rem/1.5 ui-monospace,Consolas,monospace;overflow-wrap:anywhere} .swatch-copy code{display:block;color:var(--color-text-secondary)}
+    .split-rose{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-top:var(--space-5)}
+    .rose-mark{height:.5rem;background:var(--color-accent-old-rose);width:5rem;margin-bottom:var(--space-4);border-radius:1rem}
+    .accent-text{color:var(--color-text-accent)}.honey{background:var(--color-accent-honey);border-color:var(--color-accent-honey);color:var(--color-text-primary)}.honey .caption{color:var(--color-text-primary)}
+    .contrast-row{display:flex;justify-content:space-between;gap:var(--space-4);padding:var(--space-3) 0;border-bottom:1px solid var(--color-border-subtle)}
+    .contrast-row:last-child{border-bottom:0}.ratio{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .sand{background:var(--color-background)}.secondary-text{color:var(--color-text-secondary)}
+    .type-pair{display:flex;flex-direction:column;gap:var(--space-4)}.type-hero{font-size:var(--font-size-display)}
+    .type-line{padding:var(--space-3) 0;border-bottom:1px solid var(--color-border-subtle)}.type-line:last-child{border:0}.type-line .caption{display:block;margin-top:.5rem}
+    .button{display:inline-flex;justify-content:center;align-items:center;gap:.5rem;min-height:var(--control-min-height);padding:.625rem var(--space-5);border:var(--border-width-control) solid var(--color-action-primary);border-radius:var(--radius-control);background:var(--color-action-primary);color:var(--color-on-action);font-weight:600;cursor:pointer;text-align:center}
+    .button:hover:not(:disabled):not(.secondary){background:var(--color-action-hover)}.button:active:not(:disabled):not(.secondary){background:var(--color-action-pressed)}
+    .button.secondary{color:var(--color-text-primary);background:var(--color-surface);border-color:var(--color-border-control)}.button.secondary:hover:not(:disabled){background:var(--color-background)}
+    .button:disabled{color:var(--color-text-disabled);background:var(--color-surface-disabled);border-color:var(--color-border-control);cursor:default}
+    .button.hover-sample{background:var(--color-action-hover)}.button.pressed-sample{background:var(--color-action-pressed)}
+    .specimens{display:flex;gap:var(--space-5);flex-wrap:wrap;align-items:start}.specimen{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-2)}
+    .field{display:flex;flex-direction:column;gap:var(--space-2);min-width:0}label,legend{font-weight:600}
+    input:not([type=radio]),select{width:100%;min-height:var(--control-min-height);padding:.625rem var(--space-3);color:var(--color-text-primary);background:var(--color-surface);border:var(--border-width-control) solid var(--color-border-control);border-radius:var(--radius-control)}
+    input::placeholder{color:var(--color-text-secondary);opacity:1}select:disabled{opacity:1;color:var(--color-text-disabled);background:var(--color-surface-disabled)}
+    input[aria-invalid=true]{border:var(--border-width-error) solid var(--color-error)}.error-text{color:var(--color-error);font-size:var(--font-size-small)}
+    .fields{display:grid;gap:var(--space-5);max-width:var(--width-form-max)}.field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}
+    fieldset{margin:0;padding:0;border:0;min-width:0}legend{margin-bottom:var(--space-2)}
+    .radio-row{display:flex;flex-wrap:wrap;gap:var(--space-3)}.radio-option{display:flex;align-items:center;gap:var(--space-3);min-height:var(--control-min-height);padding:.625rem var(--space-4);border:1px solid var(--color-border-control);border-radius:var(--radius-control);background:var(--color-surface)}
+    .radio-option:has(:checked){border:2px solid var(--color-selected-indicator);padding:calc(.625rem - 1px) calc(var(--space-4) - 1px)}input[type=radio]{width:1.125rem;height:1.125rem;accent-color:var(--color-selected-indicator);margin:0}
+    .card-title{font-size:1.5rem}.card-top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.card-total{font-weight:600}
+    .unit{display:flex;gap:var(--space-4);padding-top:var(--space-4);margin-top:var(--space-4);border-top:1px solid var(--color-border-subtle)}
+    .photo-placeholder{width:3.5rem;height:3.5rem;flex-shrink:0;background:var(--color-background);border-radius:var(--radius-control)}
+    .unit a{display:inline-flex;align-items:center;min-height:44px}.progress-track{height:.5rem;background:var(--color-background);border:1px solid var(--color-border-control);border-radius:1rem;margin:var(--space-4) 0}.progress-fill{height:100%;width:75%;background:var(--color-graphic-functional);border-radius:1rem}
+    .desktop-nav{display:grid;grid-template-columns:var(--width-sidebar) 1fr;gap:var(--space-5)}.nav-list{display:flex;flex-direction:column;gap:var(--space-2);border-right:1px solid var(--color-border-subtle);padding-right:var(--space-4)}
+    .nav-item{display:flex;align-items:center;min-height:46px;padding:.625rem var(--space-3);color:var(--color-text-primary);border-left:3px solid transparent}
+    .nav-item.current{border-color:var(--color-selected-indicator);background:var(--color-background);font-weight:600}.mobile-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--color-border-control);background:var(--color-surface);margin-top:var(--space-5)}
+    .mobile-nav span{display:flex;justify-content:center;align-items:center;min-height:46px;border-top:3px solid transparent}.mobile-nav .current{border-color:var(--color-selected-indicator);font-weight:600}
+    .feedback{border:1px solid var(--color-border-control);border-radius:var(--radius-control);padding:var(--space-4);margin-top:var(--space-3)}.feedback.error{border-color:var(--color-error);border-width:2px;color:var(--color-error)}
+    .empty{text-align:center;padding:var(--space-6)}.empty .editorial{font-size:1.75rem;margin-bottom:var(--space-3)}.empty .button{margin-top:var(--space-5)}
+    .space-list{display:flex;flex-direction:column;gap:var(--space-3)}.space-row{display:grid;grid-template-columns:6rem 1fr;align-items:center;gap:var(--space-3)}.space-bar{height:1rem;width:var(--size);background:var(--color-action-primary)}
+    .geometry{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4)}.geometry-box{height:5rem;background:var(--color-background);border:1px solid var(--color-border-control);margin-bottom:var(--space-3)}
+    .responsive-examples{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--space-5)}.mini-heading{font-size:1.75rem;margin-bottom:var(--space-5)}.mini-card{display:grid;gap:var(--space-4)}.mini-card label{display:block;margin-bottom:var(--space-2)}.mini-card .caption{margin-top:0}.mini-card .button{justify-self:start}
+    .mobile-sample{width:100%;max-width:24rem;margin-inline:auto}.pending{border:1px dashed var(--color-border-control);border-radius:var(--radius-container);padding:var(--space-6);background:var(--color-surface)}
+    ul{padding-left:1.25rem;margin:.75rem 0 0}li+li{margin-top:.5rem}footer{border-top:1px solid var(--color-border-control);margin-top:var(--space-8);padding-top:var(--space-5);padding-bottom:var(--space-6)}
+
+    /* Direcció B, adaptada: agrupaments sense targeta exterior niada. */
+    .panel-title,.form-block-heading h3{font:500 var(--font-size-section-editorial)/var(--line-height-section-editorial) var(--font-family-editorial);font-optical-sizing:auto}
+    .form-stack{display:grid;gap:var(--space-form-block-gap);min-width:0;align-content:start}
+    .form-block{padding:var(--space-form-block-padding);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:var(--radius-container);min-width:0}
+    .form-block-heading{display:flex;align-items:baseline;gap:var(--space-3);padding-bottom:var(--space-4);margin-bottom:var(--space-5);border-bottom:1px solid var(--color-border-subtle)}
+    .form-block-heading>div{min-width:0}.form-block-heading p{margin-top:var(--space-1)}
+    .block-marker{flex-shrink:0;padding:var(--space-1) var(--space-2);border-radius:var(--radius-control);background:var(--color-accent-honey);color:var(--color-text-primary);font:500 1rem/1.2 var(--font-family-editorial)}
+    .form-stack .field-row{grid-template-columns:1fr}.form-stack .fields{gap:var(--space-form-field-gap)}
+    .form-stack .caption{margin-top:0}.form-stack fieldset{margin-top:var(--space-5)}
+    .radio-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
+    .radio-option{align-items:flex-start;padding:var(--space-radio-card-padding);border-radius:var(--radius-container);min-width:0;font-weight:400}
+    .radio-option input{flex-shrink:0;margin-top:var(--space-1)}.radio-option strong{font-weight:600}.radio-option .radio-help{display:block;font-size:var(--font-size-small);color:var(--color-text-secondary);margin-top:var(--space-1)}
+    .radio-option:has(:checked){background:var(--color-background);padding:calc(var(--space-radio-card-padding) - 1px)}
+    .radio-option:hover:not(:has(:disabled)){border-color:var(--color-action-primary)}
+    .radio-option:has(:disabled){background:var(--color-surface-disabled);color:var(--color-text-disabled);cursor:default}
+    @supports selector(:has(input:focus-visible)){
+      .radio-option:has(input:focus-visible){outline:var(--focus-width) solid var(--color-focus-ring);outline-offset:var(--focus-offset)}
+      .radio-option input:focus-visible{outline:none}
+    }
+    .form-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-4);padding:var(--space-3) var(--space-2);border-top:1px solid var(--color-border-subtle)}
+    .error-text.message{border-left:2px solid var(--color-error);padding-left:var(--space-3)}
+    .state-stack{display:grid;gap:var(--space-5);align-content:start;min-width:0}.state-stack .panel{box-shadow:none}
+    .state-stack .field+.field{margin-top:var(--space-5)}
+    .editorial-edge{border-left:3px solid var(--color-accent-old-rose);padding-left:var(--space-4);margin-bottom:var(--space-5)}
+    .card-top{flex-wrap:wrap}.unit>div:last-child{min-width:0}.unit strong{overflow-wrap:anywhere}
+    .pattern-note{margin-top:var(--space-5);border-left:3px solid var(--color-border-control);padding:var(--space-3) var(--space-4);background:var(--color-surface)}
+    @media(min-width:66rem){#controls>.grid{grid-template-columns:1.35fr .85fr}.form-stack .field-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:42rem){:root{--font-size-section-editorial:1.5rem;--space-form-block-padding:var(--space-4)}.radio-row{grid-template-columns:1fr}.form-actions{justify-content:space-between}}
+
+    /* 1G.1: composició fidel a B de 1F, limitada als dos exemples de targetes. */
+    #targetes>.grid{align-items:start;gap:var(--space-6)}
+    .card-context{min-width:0;margin:0}
+    .card-context-heading{margin-bottom:var(--space-5);padding-left:var(--space-4);border-left:3px solid var(--color-accent-honey)}
+    .card-context-heading h3{font:500 1.75rem/1.2 var(--font-family-editorial);margin:0;font-optical-sizing:auto}
+    .organic-card{background:var(--color-surface);border-radius:var(--radius-card);padding:1.75rem var(--space-5);min-width:0}
+    .organic-card.item-group{padding:0}
+    .item-group summary{padding:1.75rem var(--space-5) var(--space-4);min-height:var(--control-min-height);cursor:pointer;border-radius:var(--radius-card)}
+    .item-group summary::marker{color:var(--color-action-primary)}
+    .item-group summary:hover{background:var(--color-background)}
+    .group-name{font:500 1.75rem/1.15 var(--font-family-editorial);font-optical-sizing:auto}
+    .group-total{display:block;font-weight:600;font-size:var(--font-size-small);color:var(--color-text-secondary);margin-top:var(--space-2)}
+    .organic-units{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4)}
+    .organic-unit{display:flex;gap:var(--space-4);align-items:center;padding:var(--space-4);background:var(--color-background);border-radius:var(--radius-unit)}
+    .organic-unit>div:last-child{min-width:0}
+    .organic-unit .photo-placeholder{background:var(--color-surface);width:3rem;height:3rem;border-radius:.75rem}
+    .organic-unit h4{font:600 1rem/1.5 var(--font-family-functional);margin:0}
+    .organic-unit-number{display:block;font-size:var(--font-size-small);font-weight:400;color:var(--color-text-secondary);margin-top:var(--space-1)}
+    .organic-unit .unit-state{margin-top:var(--space-2)}
+    .coverage-heading{display:flex;gap:var(--space-4);justify-content:space-between;align-items:center}
+    .coverage-heading h4{font:500 1.5rem/1.2 var(--font-family-editorial);margin:0}
+    .coverage-ornament{background:var(--color-accent-old-rose);width:3rem;height:.25rem;border-radius:1rem;flex-shrink:0}
+    .coverage-quantity{display:flex;align-items:baseline;gap:var(--space-3);padding:var(--space-4) 1.25rem;margin-top:var(--space-4);background:var(--color-background);border-radius:var(--radius-unit)}
+    .coverage-quantity strong{font:500 3.5rem/1.15 var(--font-family-editorial)}
+    .coverage-quantity>span{font-size:1.125rem}
+    .coverage-missing{margin-top:var(--space-4);font-weight:600}
+    .coverage-track{height:.75rem;margin:var(--space-5) 0;background:var(--color-background);border:1px solid var(--color-border-control);border-radius:var(--radius-progress)}
+    .coverage-fill{display:block;width:75%;height:100%;background:var(--color-graphic-functional);border-radius:var(--radius-progress)}
+    .coverage-breakdown{display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap;background:var(--color-background);padding:var(--space-3) var(--space-4);border-radius:var(--radius-container)}
+    @media(max-width:42rem){#targetes .organic-card{padding:var(--space-5) 1.25rem}#targetes .organic-card.item-group{padding:0}#targetes .item-group summary{padding:var(--space-5) 1.25rem var(--space-4)}#targetes .group-name,#targetes .card-context-heading h3{font-size:1.625rem}#targetes .coverage-quantity strong{font-size:3rem}}
+    .empty{border-radius:var(--radius-card);box-shadow:none}
+    .geometry{grid-template-columns:repeat(4,minmax(0,1fr))}
+    @media(max-width:42rem){.geometry{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:60rem){.palette{grid-template-columns:repeat(3,minmax(0,1fr))}.three{grid-template-columns:1fr 1fr}.responsive-examples{grid-template-columns:1fr}.mobile-sample{max-width:24rem}}
+    @media(max-width:42rem){.wrap{padding:var(--space-4)}.cover{grid-template-columns:1fr}.cover-copy{padding:var(--space-5)}.cover-art{min-height:8rem;height:8rem;padding:var(--space-4);grid-template-columns:1fr 1fr}.grid,.three,.split-rose{grid-template-columns:1fr}.palette{grid-template-columns:repeat(2,minmax(0,1fr))}.field-row{grid-template-columns:1fr}.desktop-nav{grid-template-columns:1fr}.nav-list{border:0;padding:0}.panel{padding:var(--space-4)}.geometry{grid-template-columns:1fr}.contrast-row{flex-wrap:wrap}.section-head{grid-template-columns:2rem 1fr}.masthead{align-items:start}.caption,code{overflow-wrap:anywhere}}
+    @media(max-width:30rem){.space-row{grid-template-columns:1fr}}
+    @media print{.index,.skip{display:none}body{background:var(--color-surface)}.cover-art{-webkit-print-color-adjust:exact;print-color-adjust:exact}.panel,.swatch{break-inside:avoid}section{margin-top:2rem}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#contingut">Salta al contingut</a>
+  <div class="wrap">
+    <header class="masthead"><div class="brand">nestly</div><p class="meta">Design Lab · Guia visual v0.1 · 9 octubre 2026</p></header>
+    <main id="contingut">
+      <div class="cover">
+        <div class="cover-copy"><p class="eyebrow">Un llenguatge visual en construcció</p><h1>Tendresa<br>sofisticada</h1><p>Calidesa per acompanyar els preparatius. Expressió editorial, colors delicats i una interfície pensada per a persones adultes.</p><p class="caption">Sorra i malva · Mel i rosa antic · Newsreader + Source Sans 3</p></div>
+        <div class="cover-art" aria-hidden="true"><div class="color-shape"></div><div class="color-shape"></div></div>
+      </div>
+      <div class="notice"><strong>Formularis editorials + targetes orgàniques · direccions confirmades.</strong> Direcció visual i patrons de v0.1 aprovats a 1H, inclosa la correcció de targetes 1G.1. Tokens definitius i decisions tècniques obertes al registre. Catàleg estàtic, sense connexió amb les dades de Nestly. Els controls mostren aparença i focus; no implementen formularis ni fluxos. Les formes de portada són mostres cromàtiques, no il·lustracions finals.</div>
+      <nav class="index" aria-label="Índex de la guia"><a href="#color">Color</a><a href="#contrast">Contrast</a><a href="#tipografia">Tipografia</a><a href="#botons">Botons</a><a href="#controls">Controls</a><a href="#targetes">Targetes</a><a href="#navegacio">Navegació</a><a href="#feedback">Feedback</a><a href="#espai">Espai</a><a href="#responsive">Responsive</a><a href="#illustracions">Il·lustració</a></nav>
+      <section id="color" aria-labelledby="color-title">
+        <div class="section-head"><span class="number">01</span><div><h2 id="color-title">Una base tranquil·la. Accents amb intenció.</h2><p>Preferència humana: famílies Sorra, malva, Mel i rosa antic. Tots els HEX i els usos visuals són candidats tècnics.</p></div></div>
+        <div class="palette">
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-background)" aria-hidden="true"></div><div class="swatch-copy"><strong>Sorra · fons</strong><code>#F0E7DD</code><code>--color-background</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-surface)" aria-hidden="true"></div><div class="swatch-copy"><strong>Ivori · superfície</strong><code>#FBF8F4</code><code>--color-surface</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-text-primary)" aria-hidden="true"></div><div class="swatch-copy"><strong>Text principal</strong><code>#49383F</code><code>--color-text-primary</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-text-secondary)" aria-hidden="true"></div><div class="swatch-copy"><strong>Text secundari</strong><code>#75616B</code><code>--color-text-secondary</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-action-primary)" aria-hidden="true"></div><div class="swatch-copy"><strong>Malva · acció</strong><code>#695363</code><code>--color-action-primary</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-accent-honey)" aria-hidden="true"></div><div class="swatch-copy"><strong>Mel · editorial</strong><code>#D7B16D</code><code>--color-accent-honey</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-accent-old-rose)" aria-hidden="true"></div><div class="swatch-copy"><strong>Rosa · decoració</strong><code>#B58D9C</code><code>--color-accent-old-rose</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-text-accent)" aria-hidden="true"></div><div class="swatch-copy"><strong>Rosa · funcional</strong><code>#8A596C</code><code>--color-text-accent</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-border-control)" aria-hidden="true"></div><div class="swatch-copy"><strong>Vora funcional</strong><code>#8E7885</code><code>--color-border-control</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-border-subtle)" aria-hidden="true"></div><div class="swatch-copy"><strong>Vora decorativa</strong><code>#DBC5AD</code><code>--color-border-subtle</code></div></div>
+          <div class="swatch"><div class="swatch-color" style="--swatch:var(--color-error)" aria-hidden="true"></div><div class="swatch-copy"><strong>Error</strong><code>#8C3949</code><code>--color-error</code></div></div>
+        </div>
+        <div class="split-rose"><article class="panel"><div class="rose-mark" aria-hidden="true"></div><h3>El rosa original es conserva</h3><p>Un gest decoratiu que aporta delicadesa. No es fa servir per escriure, delimitar controls ni comunicar estats.</p><p class="caption">#B58D9C · 2,73:1 sobre Ivori · 2,37:1 sobre Sorra</p></article><article class="panel"><h3 class="accent-text">Un rosa que també es pot llegir</h3><p class="accent-text">La variant més profunda pot donar veu a una nota editorial o a un enllaç sense perdre llegibilitat.</p><p><a href="#contrast">Consulta els usos i els contrastos</a></p><p class="caption">#8A596C · 5,32:1 sobre Ivori · 4,61:1 sobre Sorra</p></article></div>
+      </section>
+      <section id="contrast" aria-labelledby="contrast-title">
+        <div class="section-head"><span class="number">02</span><div><h2 id="contrast-title">Accessibilitat per combinació</h2><p>Text normal ≥ 4,5:1. Text gran ≥ 3:1. Components i gràfics necessaris ≥ 3:1 respecte al fons adjacent. Càlcul sRGB opac; no és una auditoria del frontend.</p></div></div>
+        <div class="grid">
+          <article class="panel"><h3 class="editorial panel-title">Sobre Ivori · #FBF8F4</h3><div class="contrast-row"><span>Text principal</span><span class="ratio">10,33:1</span></div><div class="contrast-row secondary-text"><span>Text secundari</span><span class="ratio">5,39:1</span></div><div class="contrast-row accent-text"><span>Rosa funcional / enllaç</span><span class="ratio">5,32:1</span></div><div class="contrast-row"><span>Vora de control</span><span class="ratio">3,83:1</span></div><div class="contrast-row"><span>Focus / selected / gràfic malva</span><span class="ratio">6,57:1</span></div><div class="contrast-row error-text"><span>Text i vora d’error</span><span class="ratio">7,09:1</span></div></article>
+          <article class="panel sand"><h3>Sobre Sorra · #F0E7DD</h3><div class="contrast-row"><span>Text principal</span><span class="ratio">8,94:1</span></div><div class="contrast-row secondary-text"><span>Text secundari</span><span class="ratio">4,67:1</span></div><div class="contrast-row accent-text"><span>Rosa funcional / enllaç</span><span class="ratio">4,61:1</span></div><div class="contrast-row"><span>Vora de control</span><span class="ratio">3,32:1</span></div><div class="contrast-row"><span>Focus / selected / gràfic malva</span><span class="ratio">5,69:1</span></div><div class="contrast-row error-text"><span>Text i vora d’error</span><span class="ratio">6,14:1</span></div></article>
+          <article class="panel honey"><h3>Mel amb text principal</h3><p>Petites dosis de calidesa en zones editorials, amb text fosc i sense controls superposats.</p><p class="caption">Text principal / Mel: 5,41:1. El text secundari només dona 2,83:1; el rosa funcional, 2,79:1.</p></article>
+          <article class="panel"><h3 class="editorial panel-title">Combinacions que cal evitar</h3><p>Rosa clar i Mel no són vores, focus, labels ni indicadors funcionals sobre fons neutres. Les vores subtils només separen decorativament.</p><p class="caption">Mel / Ivori: 1,91:1. Rosa clar / Ivori: 2,73:1. Vora subtil / Ivori: 1,57:1. No abaixar opacitat dels textos sobre Sorra.</p></article>
+        </div>
+      </section>
+      <section id="tipografia" aria-labelledby="type-title">
+        <div class="section-head"><span class="number">03</span><div><h2 id="type-title">Expressió editorial. Lectura funcional.</h2><p>Newsreader 400/500 per al registre editorial; Source Sans 3 400/500/600 per a la feina quotidiana. Seccions editorials B confirmades com a direcció; pesos i escala exacta pendents.</p></div></div>
+        <div class="grid"><article class="panel type-pair"><p class="eyebrow">Newsreader · pes 500</p><p class="editorial type-hero">Preparar amb estima.</p><p class="editorial" style="font-size:1.5rem;font-weight:400">Delicadesa, espai i una mica d’il·lusió.</p><p class="caption">Georgia és el fallback. Mida òptica automàtica, sense negreta sintètica.</p></article><article class="panel type-pair"><p class="eyebrow">Source Sans 3 · pesos 400 / 500 / 600</p><p>La informació s’ha de poder consultar amb calma, sense ornaments que competeixin amb les dades.</p><p style="font-weight:500">Categoria · Subcategoria · Quantitat</p><p style="font-weight:600">Estat de preparació</p><p class="caption">Català: Il·lusió, preparació, peücs. Números: 1 · 100 · 24,50 €. Fallback system-ui.</p></article></div>
+        <div class="panel" style="margin-top:var(--space-5)"><div class="type-line"><p class="editorial" style="font-size:var(--font-size-display)">Tendresa sofisticada</p><span class="caption">Display · 40–48 px de referència · 500 · interlineat 1,15</span></div><div class="type-line"><p class="editorial" style="font-size:var(--font-size-title)">Afegir Item a casa</p><span class="caption">Títol · 32–38 px · 500 · interlineat 1,15</span></div><div class="type-line"><p class="editorial panel-title">Informació de l’Item</p><span class="caption">Secció editorial B · 24–26 px · 500 · interlineat 1,2</span></div><div class="type-line"><p style="font-size:var(--font-size-section);font-weight:600">Dades de l’Item</p><span class="caption">Subsecció funcional · 18 px · 600 · interlineat 1,5</span></div><div class="type-line"><p>Una unitat física, un Item.</p><span class="caption">Text · 16 px · 400 · interlineat 1,5</span></div><div class="type-line"><p class="caption">Selecciona primer la categoria.</p><span class="caption">Ajuda · 14 px · 400 · interlineat 1,5</span></div></div>
+        <p class="caption" style="margin-top:var(--space-4)">Aquest HTML consulta Google Fonts: cal connexió per veure les famílies preferides. Sense connexió es manté el contingut amb fallbacks. L’allotjament de fonts de Nestly continua pendent.</p>
+      </section>
+      <section id="botons" aria-labelledby="buttons-title">
+        <div class="section-head"><span class="number">04</span><div><h2 id="buttons-title">Accions clares, estats visibles</h2><p>Mostres sense efecte sobre dades. Passa el cursor o utilitza Tab per veure els estats natius. Focus extern de 3 px, separació neutra de 3 px.</p></div></div>
+        <div class="panel"><div class="specimens"><div class="specimen"><button class="button" type="button">Crear</button><span class="caption">Primari · 6,57:1</span></div><div class="specimen"><button class="button secondary" type="button">Cancel·lar</button><span class="caption">Secundari · 10,33:1</span></div><div class="specimen"><button class="button hover-sample" type="button">Crear</button><span class="caption">Hover de mostra · 7,87:1</span></div><div class="specimen"><button class="button pressed-sample" type="button">Crear</button><span class="caption">Pressió de mostra · 9,29:1</span></div><div class="specimen"><button class="button focus-sample" type="button">Crear</button><span class="caption">Focus de mostra</span></div><div class="specimen"><button class="button" type="button" disabled>Crear</button><span class="caption">Desactivat · 4,67:1</span></div></div><p class="caption">El focus no toca el fons malva del botó: l’espai neutre permet distingir l’anell. Sense aquesta separació, mateix malva contra malva seria 1:1. La pressió transitòria no és selecció persistent.</p></div>
+      </section>
+      <section id="controls" aria-labelledby="controls-title">
+        <div class="section-head"><span class="number">05</span><div><h2 id="controls-title">Agrupar, donar ritme, deixar treballar</h2><p>Patrons B per al registre directe a casa. Títols editorials i controls funcionals. Categoria sense preselecció; Subcategoria dependent desactivada. Mostres sense validació ni enviament.</p></div></div>
+        <div class="grid">
+          <div class="form-stack">
+            <article class="form-block" aria-labelledby="identity-title">
+              <header class="form-block-heading"><span class="block-marker" aria-hidden="true">01</span><div><h3 id="identity-title">Informació de l’Item</h3><p class="caption">Nom i classificació</p></div></header>
+              <div class="fields">
+                <div class="field"><label for="item-name">Nom de l’Item</label><input id="item-name" value="Body 0–3 mesos" maxlength="100" aria-describedby="name-help"><p class="caption" id="name-help">Obligatori. Màxim 100 caràcters i almenys una lletra.</p></div>
+                <div class="field-row"><div class="field"><label for="category">Categoria</label><select id="category" aria-describedby="category-help"><option value="">Selecciona una categoria</option></select><p class="caption" id="category-help">El catàleg real no es reprodueix en aquesta guia.</p></div><div class="field"><label for="subcategory">Subcategoria</label><select id="subcategory" disabled aria-describedby="subcategory-help"><option value="">Selecciona primer la categoria</option></select><p class="caption" id="subcategory-help">Selecciona primer la categoria. No s’assigna classificació automàtica.</p></div></div>
+              </div>
+            </article>
+            <article class="form-block" aria-labelledby="preparation-title">
+              <header class="form-block-heading"><span class="block-marker" aria-hidden="true">02</span><div><h3 id="preparation-title">Quantitat i preparació</h3><p class="caption">Cada unitat es registra com un Item</p></div></header>
+              <div class="field"><label for="quantity">Quantitat</label><input id="quantity" type="number" value="1" min="1" max="100" step="1" aria-describedby="quantity-help"><p class="caption" id="quantity-help">Enter entre 1 i 100. Totes les unitats comparteixen les dades indicades.</p></div>
+              <fieldset><legend>Estat de preparació</legend><div class="radio-row"><label class="radio-option"><input type="radio" name="preparation" value="no-preparat" checked aria-describedby="not-ready-help"><span><strong>No preparat</strong><span class="radio-help" id="not-ready-help">Encara no està preparat.</span></span></label><label class="radio-option"><input type="radio" name="preparation" value="preparat" aria-describedby="ready-help"><span><strong>Preparat</strong><span class="radio-help" id="ready-help">Ja està preparat.</span></span></label></div></fieldset>
+            </article>
+            <div class="form-actions"><button class="button secondary" type="button">Cancel·lar</button><button class="button" type="button">Crear</button></div>
+          </div>
+          <div class="state-stack">
+            <article class="panel"><h3 class="editorial panel-title">Error de camp</h3><div class="field"><label for="invalid-name">Nom de l’Item</label><input id="invalid-name" value="123" aria-invalid="true" aria-describedby="invalid-message"><p class="error-text message" id="invalid-message">Error: el nom ha de contenir almenys una lletra.</p></div><div class="field"><label for="invalid-quantity">Quantitat</label><input id="invalid-quantity" type="number" value="101" min="1" max="100" step="1" aria-invalid="true" aria-describedby="invalid-quantity-message"><p class="error-text message" id="invalid-quantity-message">Error: introdueix un enter entre 1 i 100.</p></div><p class="caption">Valors conservats, vora d’error i missatge explícit. Errors fixos de mostra; no es valida en escriure.</p></article>
+            <article class="panel"><h3 class="editorial panel-title">Seleccionar amb claredat</h3><p>El ràdio natiu conserva la semàntica. El punt, la vora de 2 px i Sorra reforcen selected. Amb teclat, el focus envolta tota la targeta.</p><p class="caption">Hover: vora malva sense canviar selecció. Focus: 3 px separat 3 px. Prova Tab, fletxes i Espai en el grup habilitat.</p><fieldset style="margin-top:var(--space-5)"><legend>Mostra aïllada de disabled</legend><label class="radio-option"><input type="radio" name="disabled-example" disabled aria-describedby="disabled-demo-help"><span><strong>Opció desactivada</strong><span class="radio-help" id="disabled-demo-help">Només mostra visual; no afegeix un estat de preparació.</span></span></label></fieldset><p class="caption">Selected + disabled i error del grup complet continuen pendents de validació.</p></article>
+          </div>
+        </div>
+        <div class="pattern-note"><strong>B adaptada per reduir altura.</strong> Quantitat i preparació comparteixen bloc; la franja d’accions no és una quarta targeta. Els números només ordenen agrupaments, sense passos. No s’afegeix una targeta exterior als blocs. La fixació de les accions en mòbil continua pendent de prova real.</div>
+      </section>
+      <section id="targetes" aria-labelledby="cards-title">
+        <div class="section-head"><span class="number">06</span><div><h2 id="cards-title">Formes suaus, lectura clara</h2><p>Direcció B — Orgànica contemporània: superfícies càlides i geometria regular. Dos exemples de contextos independents; no s’associa el grup Body a una Recomanació concreta.</p></div></div>
+        <div class="grid">
+          <section class="card-context" aria-labelledby="home-items-heading">
+            <header class="card-context-heading"><h3 id="home-items-heading">Items a casa</h3></header>
+            <details class="organic-card item-group" open>
+              <summary><span class="group-name">Body 0–3 mesos</span><span class="group-total">2 unitats</span></summary>
+              <div class="organic-units">
+                <div class="organic-unit"><div class="photo-placeholder" aria-hidden="true"></div><div><h4>Body 0–3 mesos <span class="organic-unit-number">· Unitat 1</span></h4><p class="unit-state">No preparat</p></div></div>
+                <div class="organic-unit"><div class="photo-placeholder" aria-hidden="true"></div><div><h4>Body 0–3 mesos <span class="organic-unit-number">· Unitat 2</span></h4><p class="unit-state">Preparat</p></div></div>
+              </div>
+            </details>
+          </section>
+          <section class="card-context" aria-labelledby="recommendations-heading">
+            <header class="card-context-heading"><h3 id="recommendations-heading">Cobertura de Recomanacions</h3></header>
+            <article class="organic-card" aria-labelledby="coverage-heading recommendations-heading">
+              <header class="coverage-heading"><h4 id="coverage-heading">Cobertura</h4><span class="coverage-ornament" aria-hidden="true"></span></header>
+              <p class="coverage-quantity"><strong>6</strong> <span>de 8</span></p><p class="coverage-missing">Falten 2</p>
+              <div class="coverage-track" role="progressbar" aria-labelledby="coverage-heading recommendations-heading" aria-valuemin="0" aria-valuemax="8" aria-valuenow="6" aria-valuetext="6 de 8. Falten 2."><span class="coverage-fill" aria-hidden="true"></span></div>
+              <p class="coverage-breakdown"><span><strong>4</strong> a casa</span><span aria-hidden="true">·</span><span><strong>2</strong> en llistes</span></p>
+            </article>
+          </section>
+        </div>
+        <div class="pattern-note"><strong>Mateixes dades, contenidors més propers.</strong> Cada unitat és independent; el grup no té foto ni preparació agregada. El desplegable funciona amb teclat, però el catàleg no implementa detalls individuals ni routing. En excés de cobertura, barra plena i text neutre segons V1. No es defineix una classificació fictícia.</div>
+      </section>
+      <section id="navegacio" aria-labelledby="nav-title">
+        <div class="section-head"><span class="number">07</span><div><h2 id="nav-title">El mateix mapa, dos ritmes</h2><p>Esquema de la V1 completa; les funcionalitats visibles en l’aplicació dependran de cada increment. Labels de mostra sense routing.</p></div></div>
+        <div class="grid"><article class="panel"><h3 class="editorial panel-title">Desktop · sidebar</h3><div class="desktop-nav"><div class="nav-list" aria-label="Mostra visual de navegació desktop"><span class="nav-item">Inici</span><span class="nav-item current">Items · actiu</span><span class="nav-item">Llistes</span><span class="nav-item">Recomanacions</span><span class="nav-item">Botigues</span></div><div><p class="editorial mini-heading">Items</p><p>Una marca lateral i el pes tipogràfic reforcen l’àrea activa.</p><p class="caption">En implementació, usar enllaços de ruta i aria-current.</p></div></div></article><article class="panel"><h3 class="editorial panel-title">Mòbil · quatre accessos</h3><p>«Més» obre una pantalla amb Recomanacions i Botigues; no un bottom sheet.</p><div class="mobile-nav" aria-label="Mostra visual de navegació mòbil"><span>Inici</span><span class="current">Items</span><span>Llistes</span><span>Més</span></div><p class="caption">Marca superior i pes 600. La barra fixa, el teclat virtual i les safe areas encara requereixen proves en la futura interfície.</p></article></div>
+      </section>
+      <section id="feedback" aria-labelledby="feedback-title">
+        <div class="section-head"><span class="number">08</span><div><h2 id="feedback-title">Informar amb serenitat</h2><p>Text explícit abans que color. Èxit temporal; error general persistent. Les mostres no s’anuncien automàticament a lectors de pantalla.</p></div></div>
+        <div class="grid"><article class="panel"><h3 class="editorial panel-title">Èxit, càrrega i error</h3><div class="feedback"><strong>Èxit.</strong> S’han creat 2 Items.</div><div class="feedback"><strong>Càrrega.</strong> S’estan carregant els Items…</div><div class="feedback error"><strong>Error.</strong> No s’han pogut carregar els Items. Torna-ho a provar.</div><p class="caption">La càrrega encara no és un estat buit. L’èxit no substitueix una confirmació. No es fixa aquí la durada del toast.</p></article><article class="panel empty"><p class="editorial">Encara no hi ha Items a casa</p><p>Registra el primer Item quan el tinguis a casa.</p><button class="button" type="button">Afegir Item</button><p class="caption">Estat sense dades · acció de mostra</p></article><article class="panel empty"><p class="editorial">Cap coincidència amb aquests filtres</p><p>Prova de restablir la classificació per veure tots els Items.</p><button class="button secondary" type="button">Netejar filtres</button><p class="caption">Mostra M1: restabliria Categoria i Subcategoria. Sense cerca ni tabs de futurs increments.</p></article><article class="panel"><h3 class="editorial panel-title">Desactivat amb motiu</h3><p>La Subcategoria depèn de la Categoria. La dependència s’explica amb text, a més de la semàntica nativa del control.</p><p class="caption">Sorra + text secundari: 4,67:1. No s’aplica opacitat global. L’excepció de contrast dels controls inactius no obliga a fer-los il·legibles.</p></article></div>
+      </section>
+      <section id="espai" aria-labelledby="space-title">
+        <div class="section-head"><span class="number">09</span><div><h2 id="space-title">Un sistema petit d’espais</h2><p>Mesures candidates en rem. Controls de 46 px mínims amb arrel de 16 px; creixen amb el text. Radis moderats i ombres que acompanyen.</p></div></div>
+        <div class="grid"><article class="panel"><h3 class="editorial panel-title">Escala d’espaiat</h3><div class="space-list"><div class="space-row"><code>1 · 4 px</code><div class="space-bar" style="--size:var(--space-1)" aria-hidden="true"></div></div><div class="space-row"><code>2 · 8 px</code><div class="space-bar" style="--size:var(--space-2)" aria-hidden="true"></div></div><div class="space-row"><code>3 · 12 px</code><div class="space-bar" style="--size:var(--space-3)" aria-hidden="true"></div></div><div class="space-row"><code>4 · 16 px</code><div class="space-bar" style="--size:var(--space-4)" aria-hidden="true"></div></div><div class="space-row"><code>5 · 24 px</code><div class="space-bar" style="--size:var(--space-5)" aria-hidden="true"></div></div><div class="space-row"><code>6 · 32 px</code><div class="space-bar" style="--size:var(--space-6)" aria-hidden="true"></div></div><div class="space-row"><code>7 · 40 px</code><div class="space-bar" style="--size:var(--space-7)" aria-hidden="true"></div></div><div class="space-row"><code>8 · 48 px</code><div class="space-bar" style="--size:var(--space-8)" aria-hidden="true"></div></div></div></article><article class="panel"><h3 class="editorial panel-title">Radis i ombra</h3><div class="geometry"><div><div class="geometry-box" style="border-radius:var(--radius-control)" aria-hidden="true"></div><p class="caption">Control · 8 px</p></div><div><div class="geometry-box" style="border-radius:var(--radius-container)" aria-hidden="true"></div><p class="caption">Bloc de formulari · 16 px</p></div><div><div class="geometry-box" style="border-radius:var(--radius-unit)" aria-hidden="true"></div><p class="caption">Zona d’unitat · 20 px</p></div><div><div class="geometry-box" style="border:0;border-radius:var(--radius-card)" aria-hidden="true"></div><p class="caption">Targeta orgànica · 28 px</p></div></div><p class="caption">Radis candidats, no aprovats. Ombra opcional de 4% només en contenidors generals; targetes orgàniques sense ombra. La vora decorativa no delimita inputs. Formulari: màxim 46rem. Contingut: màxim 72rem. Breakpoints del catàleg orientatius, sense aprovar els del producte.</p></article></div>
+      </section>
+      <section id="responsive" aria-labelledby="responsive-title">
+        <div class="section-head"><span class="number">10</span><div><h2 id="responsive-title">Jerarquia que respira a cada mida</h2><p>Fragments de composició, no nous prototips complets. Desktop pot compartir fila; mòbil apila els camps. Labels i ajudes continuen visibles.</p></div></div>
+        <div class="responsive-examples"><article class="panel"><h3 class="editorial panel-title">Fragment desktop</h3><p class="editorial mini-heading editorial-edge">Afegir Item a casa</p><div class="mini-card"><div class="field-row"><div><label for="desktop-cat">Categoria</label><select id="desktop-cat"><option>Selecciona una categoria</option></select></div><div><label for="desktop-sub">Subcategoria</label><select id="desktop-sub" disabled><option>Selecciona primer la categoria</option></select></div></div><p class="caption">Sense preselecció ni funcionalitat dependent en aquesta mostra.</p><div class="form-actions"><button class="button secondary" type="button">Cancel·lar</button><button class="button" type="button">Crear</button></div></div></article><article class="panel mobile-sample"><h3>Fragment mòbil</h3><p class="editorial mini-heading editorial-edge">Afegir Item a casa</p><div class="mini-card"><div><label for="mobile-cat">Categoria</label><select id="mobile-cat"><option>Selecciona una categoria</option></select></div><div><label for="mobile-sub">Subcategoria</label><select id="mobile-sub" disabled><option>Selecciona primer la categoria</option></select></div><p class="caption">Una columna i espai per als missatges.</p><div class="form-actions"><button class="button secondary" type="button">Cancel·lar</button><button class="button" type="button">Crear</button></div></div></article></div>
+      </section>
+      <section id="illustracions" aria-labelledby="illustration-title">
+        <div class="section-head"><span class="number">11</span><div><h2 id="illustration-title">La il·lustració continua oberta</h2><p>No hi ha estil, família d’icones ni assets finals aprovats. Aquesta guia no els genera ni els incorpora.</p></div></div>
+        <div class="pending"><h3>Delicadesa amb criteri</h3><ul><li>Formes suaus, textura lleugera i contorns no dominants; tendresa adulta, sense personatges caricaturescos.</li><li>Presència puntual en portada, capçalera o estat buit. Cap peça interfereix amb labels, controls, focus, errors o navegació.</li><li>Coherència de llum, enquadrament, escala i densitat. Provar lectura a mida petita abans d’ampliar la família.</li><li>Decoració sense informació: alternativa textual buida. Informació necessària: alternativa textual equivalent.</li><li>Registrar autoria, procedència, llicència, atribució i permís abans d’incorporar recursos. Les referències no concedeixen drets d’ús.</li></ul><p class="caption">Iconografia: proposta lineal simple amb label visible. Biblioteca, traç, variants i llicència pendents. Cap dependència nova.</p></div>
+      </section>
+    </main>
+    <footer><p><strong>v0.1 · direcció i patrons aprovats; decisions tècniques obertes.</strong></p><p class="caption">Fonts documentals: <a href="design-system-v0.1.md">Guia d’estils</a> · <a href="decisions-pendents.md">Decisions pendents</a> · <a href="../disseny-ui-ux-v1.md">UI/UX V1</a>. Referències de contrast: <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html">WCAG 2.2 · text</a> i <a href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">elements no textuals</a>.</p><p class="caption">Pendent: accessibilitat del frontend real, comportament responsive amb teclat virtual, variants completes, il·lustracions i allotjament de fonts. Aquest catàleg no implementa el frontend ni inicia M1.3.</p></footer>
+  </div>
+</body>
+</html>
