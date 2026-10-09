@@ -143,6 +143,18 @@ Per a disseny, identifica què funciona, què és problemàtic, el motiu i les a
 
 No reescriguis grans parts del projecte només per preferència estilística.
 
+## Flux de desenvolupament Git i revisió col·laborativa
+
+S’adopta un flux inspirat en GitHub Flow, adaptat a un projecte personal d’enginyeria de software assistida per IA:
+
+- `main` representa la versió estable, revisada i funcional del projecte. No es desenvolupa directament sobre `main`.
+- Cada funcionalitat o increment es desenvolupa en una branca creada a partir de la versió actualitzada de `main`.
+- Es fan commits petits, coherents i amb missatges descriptius.
+- Abans d’integrar una branca, es revisen els canvis i se superen les comprovacions pertinents. La integració a `main` es fa preferentment mitjançant una Pull Request, amb revisió i aprovació humana.
+- Codex no pot executar `push`, `merge` ni `cherry-pick`, ni crear una Pull Request, sense autorització explícita de la persona usuària. Tampoc no pot iniciar una fita nova sense autorització.
+- No es manté una branca permanent `develop`; s’evita complexitat innecessària.
+- Els worktrees addicionals són vàlids. Abans de modificar o registrar canvis, cal comprovar la branca activa i l’estat de Git.
+
 ## Context funcional de la V1
 
 La V1 és una aplicació web personal, local i manual per gestionar la preparació de l’arribada d’un nadó. Està centrada en el control i registre de la informació.

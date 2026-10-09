@@ -85,7 +85,7 @@ Un Item sense ITEM_LLISTA pot ser un objecte incorporat directament a casa. Si u
 
 El nom és obligatori: a efectes de validació se n’ignoren els espais inicials i finals, no pot quedar buit, ha de contenir almenys una lletra i té un màxim de 100 caràcters. Admet números i símbols si també conté alguna lletra. No és únic: unitats físiques diferents poden tenir el mateix nom.
 
-L’`estat_preparacio` només és aplicable quan l’Item és físicament a casa. S’inicia com a **no preparada** en incorporar-lo directament a casa o en recollir-lo de Llista, també si es crea inicialment com a **recollit**. Posteriorment pot passar a **preparada**. Aquests són els dos únics estats; la no aplicabilitat abans de ser a casa no és un tercer estat ni en defineix la representació tècnica. És independent de l’estat de comanda, que només descriu el procés d’adquisició.
+L’`estat_preparacio` només és aplicable quan l’Item és físicament a casa. En registrar-lo directament a casa es pot seleccionar **preparada** o **no preparada**, amb **no preparada** com a valor inicial del formulari; totes les unitats de l’operació reben l’estat escollit. Aquesta excepció aprovada de RF-06 no afecta la recollida de Llista: en recollir-lo, també si es crea inicialment com a **recollit**, s’inicia obligatòriament com a **no preparada** i posteriorment pot passar a **preparada**. Aquests són els dos únics estats; la no aplicabilitat abans de ser a casa no és un tercer estat ni en defineix la representació tècnica. És independent de l’estat de comanda, que només descriu el procés d’adquisició.
 
 Un Item incorporat directament a casa no necessita `data_entrada_casa`; un Item encara en adquisició no la té. Per als Items recollits de Llista, aquesta data coincideix amb `data_recollida`, segons les regles d’ITEM_LLISTA.
 
@@ -231,6 +231,12 @@ Les quatre sumes es fan sobre tots els ITEM_LLISTA actuals de la Llista, incloso
 ### 8.1. Un Item representa una unitat física
 
 Cada objecte físic es modela individualment perquè el domini necessita poder controlar cada unitat. Així, cinc bodies són cinc Items i no un sol registre amb quantitat cinc. Aquesta decisió permet identificar cada Item concret, el seu estat de preparació i, si n’hi ha, el seu origen en una llista.
+
+La quantitat del formulari de registre directe a casa és una entrada de l’operació (enter entre 1 i 100), no un atribut persistent d’Item: es creen N unitats independents de manera atòmica. Poden compartir una fotografia sense perdre la seva identitat individual.
+
+L’agrupació de consulta és una projecció, no una entitat: mateixa Subcategoria i nom retallat als extrems comparat sense distingir majúscules/minúscules. Conserva els noms originals i no normalitza accents ni espais interiors. Moments de creació, fotografies i preparacions diferents no separen un grup; cada unitat conserva ID i detall. El total és derivat. Els grups s’ordenen per màxima data de creació descendent i màxim ID descendent en empat; les unitats per data de creació i ID descendents.
+
+La data d’entrada a casa no determina per si sola la situació: els Items directes no la necessiten i els recollits de Llista també són a casa, conservant ITEM_LLISTA.
 
 ### 8.2. Existència d’ITEM_LLISTA
 

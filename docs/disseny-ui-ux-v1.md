@@ -162,6 +162,12 @@ Items és una secció principal del Dashboard. Substitueix una proposta inicial 
 
 #### Llistat d’Items
 
+**Abast M1:** només registre i consulta d’Items a casa, sense tabs de situacions encara no implementades ni cercador textual. Inicialment es mostren tots els Items de l’abast, amb Categoria i Subcategoria a **Totes**. Els filtres són conjuntius i dependents; canviar Categoria neteja una Subcategoria incompatible. Les opcions de consulta V1 descrites a continuació es conserven per increments posteriors.
+
+En M1 el llistat presenta grups desplegables per mateixa Subcategoria i mateix nom retallat als extrems, comparat sense distingir majúscules/minúscules. Es conserva el nom original de cada Item, sense normalitzar accents ni espais interiors. Cada capçalera mostra el total d’unitats amb representació visual neutra, sense atribuir-hi la fotografia d’una unitat. En desplegar, cada unitat mostra la seva fotografia o placeholder, nom, preparació i accés al detall individual amb el seu identificador. Moments de creació, fotografies i preparacions diferents poden conviure al grup. No existeix identificador persistent de grup.
+
+Els grups s’ordenen per la data de creació més recent de les seves unitats, descendent, amb màxim ID descendent en empat; les unitats per `data_creacio DESC, id DESC`. Es distingeix l’estat sense Items, amb **Afegir Item**, del de filtres sense coincidències, amb **Netejar filtres** que restableix totes les Categories/Subcategories.
+
 Els tabs de situació són **Tots**, **A casa** i **En llistes**. **Tots** inclou tots els Items. **A casa** inclou Items creats directament a casa i Items de Llista ja recollits. **En llistes** inclou només els associats a una Llista i pendents de recollir. L’estat inicial és **Tots**, totes les Categories i totes les Subcategories, sense cerca ni filtre de Llista.
 
 Categoria i Subcategoria són filtres addicionals. En seleccionar una Categoria, el filtre Subcategoria només ofereix les seves Subcategories; si es canvia de Categoria i la Subcategoria deixa de ser vàlida, torna a **Totes**. El filtre per Llista només és visible al tab **En llistes**. Els filtres actius es combinen de manera conjuntiva: els resultats han de complir-los tots.
@@ -186,9 +192,15 @@ Els camps propis són:
 - **Fotografia opcional:** com a màxim una per Item. El flux permet afegir-la, previsualitzar-la i canviar-la o eliminar-la. Si no n’hi ha, es mostra un *placeholder* neutre i coherent a tota l’aplicació, sense icones diferents segons Categoria. La V1 ha de permetre fotografies habituals de mòbil, inclosos HEIC/HEIF d’iPhone i formats web i fotogràfics habituals. La política tècnica de fotografia es defineix a [Arquitectura V1, A09](./arquitectura-v1.md#10-a09--gestió-de-fotografies-dels-items); els detalls encara oberts es recullen en aquell document.
 - **Subcategoria obligatòria:** les opcions són predefinides i es mostren amb la seva Categoria. Si no es coneix la classificació correcta, es pot seleccionar **Pendent de classificar**, dins de la Categoria **Pendent de classificar**. Posteriorment es pot substituir per la correcta en editar l’Item; no es creen ni s’editen Categories o Subcategories des de la UI.
 
+Per al registre directe a casa, el formulari exigeix seleccionar explícitament **Categoria** i **Subcategoria** dependent, sense classificació preseleccionada. En canviar Categoria es neteja una Subcategoria incompatible. **Pendent de classificar** requereix selecció explícita, mai s’assigna per falta de dades. Categoria facilita la selecció i continua derivant-se de Subcategoria.
+
+S’afegeixen **Quantitat**, obligatòria, inicialment 1, enter entre 1 i 100 inclosos, i **Estat de preparació**, amb opcions **Preparat** i **No preparat**, inicialment **No preparat**. Aquestes etiquetes representen els estats existents **preparada** i **no preparada**. Totes les N unitats reben el nom, classificació i preparació seleccionats. La fotografia opcional s’associa a totes. El nom es valida retallant els espais als extrems, preservant-ne majúscules, accents i espais interiors; l’agrupació no substitueix el nom de cada Item.
+
+En M1 només hi ha registre directe a casa i no es demana situació. La selecció de situació de la V1 completa es manté per quan s’implementin Llistes. Els errors de camps són inline, els generals persistents i les dades es conserven; cap error ha de produir una creació parcial.
+
 L’Usuari ha de triar explícitament exactament una situació inicial, sense cap opció preseleccionada:
 
-- **A casa:** no es mostren camps d’adquisició ni es demana data d’entrada a casa. La preparació inicial és **no preparada**.
+- **A casa:** no es mostren camps d’adquisició ni es demana data d’entrada a casa. La preparació inicial és la seleccionada per l’Usuari, amb **no preparada** inicialment seleccionada al formulari, segons l’excepció de RF-06.
 - **En una llista:** es demana una Llista obligatòria i les dades inicials d’adquisició descrites a continuació. Si la creació s’inicia des d’una Llista, només queda preseleccionada aquella Llista; la situació inicial requereix selecció explícita. Si falta la Llista, es pot crear amb el flux secundari de §4.1.
 
 Si es canvia d’**En una llista** a **A casa**, es descarten les dades i el context de Llista que deixen de ser aplicables.
@@ -314,7 +326,7 @@ Una operació correcta mostra feedback temporal no bloquejant de tipus *toast*. 
 
 ### 4.6. Navegació després d’operacions d’Item
 
-- Crear des de la secció Items porta al detall del nou Item, amb navegació per tornar al llistat d’Items.
+- Registrar directament a casa des de la secció Items retorna al llistat amb **S’han creat N Items**. El grup queda accessible i, preferentment, desplegat; el nombre acabat de crear es diferencia del total acumulat si hi havia unitats anteriors. Es conserva l’accés als detalls individuals. Aquesta regla substitueix el retorn anterior al detall del nou Item per al registre directe a casa.
 - Crear des d’una Llista retorna a la Llista d’origen.
 - Editar i desar retorna sempre al detall de l’Item, amb el toast **✓ Canvis desats**.
 - Confirmar i eliminar retorna al context d’origen, Items o Llista segons correspongui, amb el toast **✓ Item eliminat**.
