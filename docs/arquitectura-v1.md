@@ -80,6 +80,24 @@ Els codis HTTP d’error i el contracte de resposta es defineixen a A08 (§9.2).
 
 En el contracte HTTP/API, tots els imports monetaris de requests i responses JSON es representen com nombres enters en cèntims, inclosos els imports derivats i els totals econòmics retornats. La representació entre capes i els exemples es concreten a §13.5.
 
+### Contractes conceptuals de M1
+
+Les decisions aprovades de M1 concreten A05/A06 sense implementar endpoints ni modificar l’esquema. El registre directe a casa rep nom, Categoria seleccionada, Subcategoria dependent, quantitat obligatòria (enter entre 1 i 100), preparació seleccionada i fotografia opcional. Categoria és dada de validació/selecció, no una FK nova a Item; quantitat pertany a l’operació, no a la persistència. El nom es valida retallant extrems, preservant majúscules, accents i espais interiors; agrupar no reescriu el nom original de cada unitat.
+
+| Àmbit | Responsabilitat en la creació múltiple |
+| --- | --- |
+| Frontend | Quantitat inicial 1, preparació inicial No preparat, classificació explícita i validació UX; conserva dades davant errors. |
+| HTTP | Valida estructura, tipus i formats, accepta només camps permesos i tradueix resultats/errors segons A08. |
+| Application | Obté la classificació, comprova existència i correspondència Categoria/Subcategoria i coordina N unitats, fotografia, transacció i compensacions. |
+| Domain | Valida RF-01a, quantitat 1–100 i preparació; aplica l’excepció de RF-06 només al registre directe a casa, sense conèixer HTTP, SQL o filesystem. |
+| Infrastructure | Executa SQL parametritzat amb `pg`, obté IDs i dates generats per PostgreSQL i implementa transacció i pipeline A09. |
+
+Es creen N registres `item` independents amb l’estat seleccionat, sense `item_llista`, amb `data_entrada_casa = NULL` i `foto_ref = NULL` si no hi ha fotografia. No hi ha default SQL de preparació: l’aplicació n’aporta el valor. **Pendent de classificar** requereix selecció explícita. El resultat d’èxit es retorna després de completar la persistència, identificant les N unitats creades i el seu nombre, sense ID persistent de grup. Entrada o correspondència invàlides produeixen 400; una referència inexistent, 404; una fallada inesperada, 500 controlat, sense insercions parcials. Noms concrets dels camps i transport de l’upload es concretaran en implementar.
+
+La consulta de M1 és una projecció dels Items de l’abast, amb filtres conjuntius per Categoria/Subcategoria, inicialment tots. Neteja una Subcategoria incompatible en canviar Categoria i diferencia buit de consulta sense coincidències. Forma grups per `subcategoria_id` i nom retallat als extrems comparat sense distingir majúscules/minúscules, sense normalitzar accents ni espais interiors. Retorna total i unitats amb IDs, noms originals, preparacions i fotografies individuals; no persisteix grups. L’ordre és `MAX(data_creacio) DESC`, amb `MAX(id) DESC` en empat, i `data_creacio DESC, id DESC` per unitat. La capçalera neutra correspon a UI/UX. No s’incorpora cerca textual a M1 ni es fixa encara el mecanisme SQL o la forma exhaustiva de la resposta.
+
+La consulta futura a casa inclou Items sense ITEM_LLISTA i Items de Llista recollits; `data_entrada_casa IS NOT NULL` no és un criteri universal. El mateix Item conserva el context de Llista i no es compta dues vegades.
+
 ## 8. A07 — Model físic PostgreSQL
 
 ### 8.1. Taules i identificadors
@@ -207,6 +225,8 @@ Application/Domain comprova aquestes condicions. Quan l’eliminació és vàlid
 
 ### 8.8. Referència de fotografia
 
+En registrar N unitats amb fotografia, totes comparteixen la mateixa `foto_ref`. La columna no té restricció UNIQUE i l’esquema actual ho permet. No cal migració imprescindible per a M1, ni afegir quantitat, Categoria o grup a Item.
+
 ITEM conserva una referència nullable a la fotografia, opcional i amb un màxim d’una per Item. No s’afegeix una taula FOTO. PostgreSQL no guarda el binari ni una ruta física absoluta: la referència és relativa i controlada, segons A09 (§10).
 
 ## 9. A08 — Validació, gestió d’errors, transaccions i seguretat
@@ -268,6 +288,7 @@ Infrastructure garanteix que totes les operacions d’una mateixa transacció ut
 
 | Operació atòmica | Abast |
 | --- | --- |
+| Registrar N Items directament a casa | Crear totes les N unitats o cap segons RF-01d. Diverses sentències comparteixen transacció/client; una única inserció múltiple ja és atòmica com a sentència. La fotografia es coordina segons A09, sense transacció ACID conjunta. |
 | Crear un Item associat a una Llista | Crear ITEM i ITEM_LLISTA conjuntament, sense persistència parcial si falla alguna part. Si es crea inicialment com a recollit, s’apliquen les invariants ja definides a A07 i CU-08. |
 | Marcar un Item com a `recollit` | Actualitzar ITEM_LLISTA i ITEM amb un únic instant compartit per `data_recollida` i `data_entrada_casa`, i preparació inicial `no_preparada`, segons A07. |
 | Corregir `recollit` cap a un estat previ | Coordinar ITEM_LLISTA i ITEM: les dues dates queden a `NULL` i la preparació deixa de ser aplicable, també amb `NULL`, segons RF-28, CU-18 i A07. |
@@ -345,6 +366,8 @@ La substitució prioritza conservar la fotografia anterior fins que la nova sigu
 4. Actualitzar la referència persistent de l’Item.
 5. Eliminar el fitxer anterior.
 
+El pas 5 només es fa quan cap Item referencia el fitxer anterior. Substituir o eliminar la fotografia d’una unitat modifica únicament la seva referència, mai el contingut del fitxer compartit. Les altres referències continuen vàlides. Infrastructure comprova les referències persistents abans de la neteja; una fallada de comprovació no autoritza eliminar el fitxer.
+
 PostgreSQL i filesystem **no comparteixen una transacció ACID**. S’apliquen aquestes conseqüències:
 
 | Fallada | Resultat i compensació |
@@ -357,11 +380,13 @@ No es dissenya una transacció distribuïda ni un sistema complex de jobs o garb
 
 ### 10.8. Eliminació d’un Item amb fotografia
 
-La dada funcional principal és l’Item. Primer es completa la seva eliminació funcional a PostgreSQL i després s’elimina físicament la fotografia. No s’elimina primer el fitxer si una fallada posterior de PostgreSQL podria deixar un Item existent sense fotografia.
+La dada funcional principal és l’Item. Primer es completa la seva eliminació funcional a PostgreSQL i després només s’elimina físicament la fotografia si cap Item la referencia. No s’elimina primer el fitxer si una fallada posterior de PostgreSQL podria deixar un Item existent sense fotografia. Eliminar una unitat no pot trencar les fotografies de les altres. La mateixa regla s’aplica a la retirada de fotografia i a eliminacions de diversos Items.
 
 Si PostgreSQL ha eliminat correctament l’Item però falla la neteja del filesystem, l’Item continua considerant-se eliminat. No es reverteix l’operació funcional: es registra la fallada i es tolera temporalment el fitxer orfe. No s’implementa preventivament un sistema automàtic de neteja d’orfes en V1.
 
 ### 10.9. Responsabilitats arquitectòniques
+
+**Creació múltiple amb fotografia compartida:** Application valida les dades i coordina el processament d’una sola fotografia. Infrastructure valida el contingut, normalitza i guarda un únic fitxer nou abans de la transacció de creació. Les N unitats s’insereixen amb la mateixa referència; no es duplica físicament el fitxer. Si falla validació, processament o guardat, no es creen Items. Si falla la persistència després de guardar el fitxer, PostgreSQL reverteix totes les insercions i s’intenta eliminar el fitxer nou com a compensació, sempre que cap Item el referenciï. Si falla la compensació, es registra l’error i es tolera temporalment el fitxer orfe. Una fallada de neteja després d’un COMMIT correcte no reverteix una operació funcional completada. PostgreSQL i filesystem no comparteixen transacció ACID; no s’afegeixen serveis externs, taula FOTO ni jobs de neteja preventius.
 
 | Àmbit | Responsabilitat |
 | --- | --- |

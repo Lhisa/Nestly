@@ -219,7 +219,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 **Actor:** Usuari
 
-**Objectiu:** Registrar un nou objecte físic que forma part de la preparació del nadó.
+**Objectiu:** Registrar un objecte físic o, directament a casa, N unitats independents que formen part de la preparació del nadó.
 
 **Precondicions:** Cap.
 
@@ -227,24 +227,26 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 1. L’Usuari inicia la creació d’un Item.
 2. El sistema sol·licita les dades de l’Item i la seva Subcategoria.
-3. L’Usuari introdueix el nom obligatori, selecciona exactament una Subcategoria predefinida i, opcionalment, aporta una fotografia.
+3. L’Usuari introdueix el nom obligatori, selecciona explícitament Categoria i exactament una Subcategoria predefinida dependent i, opcionalment, aporta una fotografia. Per registrar directament a casa indica quantitat obligatòria, inicialment 1, enter entre 1 i 100, i preparació **preparada** o **no preparada**, inicialment **no preparada**.
 4. L’Usuari selecciona explícitament exactament una situació inicial, sense valor preseleccionat: **A casa** o **En una llista**.
 5. Si selecciona **En una llista**, l’Usuari selecciona una Llista i indica l’estat de comanda obligatori i sense valor preseleccionat, i els imports preu total, quantitat regalada i quantitat pagada pròpia segons RF-26. El preu total és obligatori i major que zero; els altres dos imports poden ser zero. No selecciona cap estat econòmic. Si la creació s’ha iniciat des d’una Llista, aquesta ja queda preseleccionada.
 6. L’Usuari confirma la creació.
-7. El sistema valida les dades i crea l’Item, registrant automàticament `data_creacio`, i, si correspon, el seu context ITEM_LLISTA amb les dades d’adquisició. La data de creació és diferent de `data_entrada_casa` i no és editable per l’Usuari.
-8. Si s’ha creat directament **A casa**, la preparació comença com a **no preparada**, sense exigir ni demanar data d’entrada a casa. Si s’ha creat amb context de Llista i comanda **recollit**, el sistema registra automàticament la data actual com a `data_recollida` i la mateixa com a `data_entrada_casa`: l’Item és a casa, conserva ITEM_LLISTA i comença com a **no preparada**, sense introducció manual de dates. Amb qualsevol estat de comanda previ, encara no té data d’entrada a casa i la preparació no és aplicable.
+7. El sistema valida les dades i registra automàticament `data_creacio` de cada Item creat; quan correspon, crea també el context ITEM_LLISTA amb les dades d’adquisició. La data de creació és diferent de `data_entrada_casa` i no és editable per l’Usuari.
+8. Si es registra directament **A casa**, el sistema crea N Items atòmicament, amb IDs independents, mateix nom, Subcategoria i preparació seleccionada, sense ITEM_LLISTA ni exigir o demanar data d’entrada a casa. Si hi ha fotografia, es processa una vegada i les N unitats comparteixen la referència al fitxer normalitzat. Si s’ha creat amb context de Llista i comanda **recollit**, el sistema registra automàticament la data actual com a `data_recollida` i la mateixa com a `data_entrada_casa`: l’Item és a casa, conserva ITEM_LLISTA i comença com a **no preparada**, sense introducció manual de dates. Amb qualsevol estat de comanda previ, encara no té data d’entrada a casa i la preparació no és aplicable.
+9. Després del registre directe a casa es torna al llistat amb **S’han creat N Items**. El grup corresponent queda accessible i, preferentment, desplegat; N és el nombre acabat de crear, diferent del total acumulat si ja hi havia unitats. Es manté l’accés als detalls individuals.
 
 **Fluxos alternatius / excepcions:**
 
 * Si l’Usuari selecciona explícitament **A casa**, el sistema crea l’Item sense ITEM_LLISTA. No seleccionar cap situació no equival a aquesta opció.
+* En M1 només s’implementa el registre directe a casa i no es demana situació mentre només hi hagi aquest flux disponible; la selecció explícita del pas 4 es conserva per a la V1 completa.
 * Si encara no es coneix la classificació correcta, es pot seleccionar la Subcategoria predefinida **Pendent de classificar**, dins de la Categoria del mateix nom, i canviar-la posteriorment mitjançant CU-10.
 * Si falta la Llista, l’Usuari pot crear-la mitjançant CU-05 i reprendre la creació de l’Item amb les dades introduïdes conservades i la nova Llista seleccionada. Cancel·lar després l’Item no elimina la Llista creada ni cap Botiga creada durant el procés.
 * Si es canvia d’**En una llista** a **A casa**, es descarten les dades i el context de Llista que deixen de ser aplicables.
-* Si falten dades obligatòries o no es compleixen les validacions, el sistema no completa la creació, conserva les dades introduïdes, identifica els errors i permet corregir-los i tornar a confirmar.
+* Si falten dades obligatòries o no es compleixen les validacions de nom, classificació, quantitat o preparació, el sistema no crea cap unitat, conserva les dades introduïdes, identifica els errors i permet corregir-los i tornar a confirmar. Frontend i backend validen; el backend és autoritatiu. **Pendent de classificar** només s’assigna amb selecció explícita. Si falla el processament o guardat de la fotografia, no es creen Items; si falla la persistència després de guardar-la, es reverteixen les insercions i s’intenta netejar el fitxer nou, segons A09, sense transacció ACID conjunta.
 
 **Postcondicions:**
 
-* Es crea un únic Item físic amb exactament una Subcategoria i, només si correspon, un ITEM_LLISTA.
+* Directament a casa es creen totes les N unitats o cap, cadascuna amb exactament una Subcategoria i identificador propi, sense quantitat persistent ni entitat de grup. La creació amb context de Llista continua produint un únic Item amb ITEM_LLISTA; M1 no implementa aquest flux ni n’amplia la creació a múltiples unitats.
 * La creació inicial com a **recollit** produeix les mateixes invariants que la transició de CU-18: dates automàtiques coincidents, Item a casa, preparació inicial **no preparada**, context i visibilitat a la Llista conservats amb possibilitat de correcció posterior mitjançant CU-18.
 
 **Regles de negoci relacionades:**
@@ -264,6 +266,12 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 * Un **Body** rebut com a regal pertany a la Subcategoria **Bodies**. Si hi ha una Recomanació de 6 Bodies, l’Item hi contribueix encara que no estigui associat a cap Llista i estigui directament a casa.
 
 ### CU-09 — Consultar Item
+
+**Concreció de M1:** consulta agrupada dels Items físicament a casa, amb filtres conjuntius per Categoria i Subcategoria dependent, inicialment tots els resultats de l’abast. Canviar Categoria neteja una Subcategoria incompatible. La cerca i els altres filtres V1 del flux principal s’implementaran posteriorment.
+
+Els grups es formen per mateixa Subcategoria i nom sense espais als extrems, comparat sense distingir majúscules/minúscules, conservant els noms originals sense normalitzar accents ni espais interiors. Cada grup mostra el total i es desplega per consultar unitats amb ID, preparació, fotografia i accés al detall individual. Les unitats poden provenir de registres en moments diferents. La capçalera és visualment neutra, sense foto d’una unitat concreta. No es crea entitat ni ID persistent de grup.
+
+L’ordre dels grups és màxima `data_creacio` descendent, amb màxim ID descendent en empat; dins del grup, `data_creacio DESC, id DESC`. Es distingeix no tenir Items de no tenir coincidències amb els filtres; en aquest segon cas es poden netejar. La consulta futura a casa inclou també els Items de Llista recollits, sense duplicar-los ni utilitzar la data d’entrada a casa com a únic criteri.
 
 **Actor:** Usuari
 
@@ -356,7 +364,7 @@ Un possible usuari amb permisos de consulta és una evolució futura i no partic
 
 **Regles de negoci relacionades:**
 
-* L’estat de preparació és independent de l’estat de comanda i només és aplicable quan l’Item és físicament a casa. El valor inicial aplicable és **no preparada**, tant en crear-lo directament a casa com en recollir-lo de Llista.
+* L’estat de preparació és independent de l’estat de comanda i només és aplicable quan l’Item és físicament a casa. En el registre directe a casa s’aplica l’estat seleccionat segons RF-06; en recollir-lo de Llista el valor inicial continua sent **no preparada**.
 * La V1 només contempla els estats de preparació **no preparada** i **preparada**.
 * No es contempla el cicle de roba bruta/neta ni altres estats posteriors.
 
