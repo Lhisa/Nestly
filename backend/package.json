@@ -7,14 +7,15 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node --env-file-if-exists=.env dist/index.js",
     "migrate:dev": "node --env-file=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate.js up",
     "migrate:dev:down": "node --env-file=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate.js down",
     "migrate:test": "node --env-file=.env.test ./node_modules/node-pg-migrate/bin/node-pg-migrate.js up",
-    "migrate:test:down": "node --env-file=.env.test ./node_modules/node-pg-migrate/bin/node-pg-migrate.js down"
+    "migrate:test:down": "node --env-file=.env.test ./node_modules/node-pg-migrate/bin/node-pg-migrate.js down",
+    "test": "vitest run"
   },
   "dependencies": {
     "express": "^5.2.1",
@@ -23,8 +24,10 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
     "node-pg-migrate": "^9.0.0",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }
