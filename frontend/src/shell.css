@@ -27,3 +27,8 @@ nav a.active { font-weight: bold; text-decoration-thickness: 3px; }
   .desktop-navigation { display: flex; flex-direction: column; flex: 0 0 13rem; border-right: 1px solid; }
   .mobile-navigation { display: none; }
 }
+
+.classification-fields { max-width: 36rem; margin-top: 1rem; }
+.classification-fields label { display: block; margin-top: 0.75rem; }
+.classification-fields select { width: 100%; padding: 0.5rem; font: inherit; }
+.classification-fields select:focus-visible, button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
