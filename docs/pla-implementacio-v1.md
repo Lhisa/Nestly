@@ -118,7 +118,7 @@ PostgreSQL ha quedat Exited (0), com inicialment. Les còpies de seguretat i la 
 
 ### 4.1. Resultat i abast funcional
 
-M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. M1.1 està aprovada i versionada a la branca publicada `codex/m1-1-documentacio`, amb la [PR #1](https://github.com/Lhisa/Nestly/pull/1) oberta i pendent d’integració a `main`. La implementació de M1.2 encara no s’ha iniciat.
+M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. M1.1 està aprovada i integrada a `main` mitjançant la [PR #1](https://github.com/Lhisa/Nestly/pull/1), amb merge commit `345cabf24e8bb280724e1d40d503f033ed39d2bb`. M1.2 està implementada i validada a `feature/m1-2-classificacio`, pendent de publicació i integració a `main` segons §4.4.1.
 
 M1 utilitza les Categories/Subcategories predefinides de M0. L’Item representa una unitat física, té nom validat segons RF-01a i exactament una Subcategoria; la Categoria s’obté a través d’aquesta relació. No es crea ITEM_LLISTA per a un Item incorporat directament a casa.
 
@@ -150,7 +150,7 @@ Sharp i libheif-js s’incorporen quan es construeixi aquest pipeline real. Es m
 
 | Pas | Resultat verificable |
 | --- | --- |
-| M1.1 — Documentació i contracte aprovats | D1–D11 incorporades i documentació revisada i aprovada; canvis amb commit a la branca publicada `codex/m1-1-documentacio`. PR #1 oberta, pendent d’integració a `main`. No acredita implementació de M1.2. |
+| M1.1 — Documentació i contracte aprovats | D1–D11 incorporades i documentació revisada, aprovada i integrada a `main` mitjançant la PR #1. No acredita per si sola implementació de M1.2. |
 | M1.2 — Catàleg de classificació i selectors dependents | Depèn de M1.1. Consulta de dades reals, selecció explícita i neteja de Subcategoria incompatible; Pendent de classificar només per elecció. |
 | M1.3 — Creació múltiple i consulta individual sense fotografia | Depèn de M1.2. N IDs independents, nom vàlid, quantitat 1/100 acceptada i 0/101/decimals rebutjats, estat seleccionat, zero insercions parcials en fallada i accés individual. |
 | M1.4 — Agrupació, ordenació i filtres | Depèn de M1.3. Casos de majúscules i extrems, accents/espais interiors preservats, Subcategories separades, moments/estats diferents, desempat estable, filtres conjuntius, desplegat i distinció buit/sense coincidències. |
@@ -160,6 +160,11 @@ Sharp i libheif-js s’incorporen quan es construeixi aquest pipeline real. Es m
 Els passos es poden ajustar durant la implementació i inclouen les capes i proves necessàries per al seu recorregut. No són fases horitzontals per completar primer tot el backend o tot el frontend. Es pot obtenir primer un flux sense foto, però encara no és M1 complet.
 
 React Hook Form s’incorpora amb el formulari real. No es fixen aquí endpoints exhaustius, noms de classes, hooks, components, ports o abstraccions.
+
+### 4.4.1. Estat de M1.2
+
+M1.2 implementada i validada a la branca `feature/m1-2-classificacio`, pendent de publicació, revisió de la Pull Request i integració a `main`. Contracte, decisions, proves i passos manuals a [M1.2 — Classificació](./m1-2-classificacio.md). TypeScript i builds correctes; 4 proves backend, inclosa la integració de lectura amb PostgreSQL real a `nestly_test`, i 5 proves frontend superades. `nestly_dev` i `nestly_test` tenen les dues migracions M0 aplicades i el catàleg de 8 Categories i 41 Subcategories. API real i proxy Vite verificats; prova manual dels selectors superada i confirmada per la persona usuària. No s’ha iniciat M1.3.
+
 
 ### 4.5. Flux d’acceptació de M1
 
@@ -235,4 +240,4 @@ Queden deliberadament per a la implementació:
 - **Durant M1:** detall dels contractes necessaris, composició del formulari i consultes, implementació del pipeline i ajust configurable de qualitat/compressió amb fotografies reals, sense fixar abstraccions o versions en aquest pla.
 - **Després de M1:** ordre i dimensió dels slices següents, mantenint les dependències funcionals i tot l’abast V1.
 
-El pla continua sotmès a revisió humana per als increments pendents. M0 està completada i versionada. Les decisions D1–D11 i la documentació de M1.1 estan revisades i aprovades, amb commits a la branca `codex/m1-1-documentacio`, ja publicada a GitHub. La [PR #1](https://github.com/Lhisa/Nestly/pull/1) està oberta i pendent de revisió final i integració a `main`. La implementació de M1.2 encara no s’ha iniciat i requereix una nova autorització.
+El pla continua sotmès a revisió humana per als increments pendents. M0 i les decisions D1–D11 de M1.1 estan versionades i integrades a `main`; la [PR #1](https://github.com/Lhisa/Nestly/pull/1) està integrada. M1.2 està implementada i validada a `feature/m1-2-classificacio`, pendent de publicació i integració a `main`. M1.3 encara no s’ha iniciat i requereix una nova autorització.
