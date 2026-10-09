@@ -118,7 +118,7 @@ PostgreSQL ha quedat Exited (0), com inicialment. Les còpies de seguretat i la 
 
 ### 4.1. Resultat i abast funcional
 
-M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. La implementació de M1 encara no s’ha iniciat; aquesta actualització és documental i queda preparada per a revisió.
+M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. M1.1 està aprovada i versionada a la branca publicada `codex/m1-1-documentacio`, amb la [PR #1](https://github.com/Lhisa/Nestly/pull/1) oberta i pendent d’integració a `main`. La implementació de M1.2 encara no s’ha iniciat.
 
 M1 utilitza les Categories/Subcategories predefinides de M0. L’Item representa una unitat física, té nom validat segons RF-01a i exactament una Subcategoria; la Categoria s’obté a través d’aquesta relació. No es crea ITEM_LLISTA per a un Item incorporat directament a casa.
 
@@ -150,7 +150,7 @@ Sharp i libheif-js s’incorporen quan es construeixi aquest pipeline real. Es m
 
 | Pas | Resultat verificable |
 | --- | --- |
-| M1.1 — Documentació i contracte aprovats | D1–D11 incorporades i contractes conceptuals coherents; canvis documentals preparats, pendents de revisió del resultat. No acredita implementació. |
+| M1.1 — Documentació i contracte aprovats | D1–D11 incorporades i documentació revisada i aprovada; canvis amb commit a la branca publicada `codex/m1-1-documentacio`. PR #1 oberta, pendent d’integració a `main`. No acredita implementació de M1.2. |
 | M1.2 — Catàleg de classificació i selectors dependents | Depèn de M1.1. Consulta de dades reals, selecció explícita i neteja de Subcategoria incompatible; Pendent de classificar només per elecció. |
 | M1.3 — Creació múltiple i consulta individual sense fotografia | Depèn de M1.2. N IDs independents, nom vàlid, quantitat 1/100 acceptada i 0/101/decimals rebutjats, estat seleccionat, zero insercions parcials en fallada i accés individual. |
 | M1.4 — Agrupació, ordenació i filtres | Depèn de M1.3. Casos de majúscules i extrems, accents/espais interiors preservats, Subcategories separades, moments/estats diferents, desempat estable, filtres conjuntius, desplegat i distinció buit/sense coincidències. |
@@ -235,4 +235,4 @@ Queden deliberadament per a la implementació:
 - **Durant M1:** detall dels contractes necessaris, composició del formulari i consultes, implementació del pipeline i ajust configurable de qualitat/compressió amb fotografies reals, sense fixar abstraccions o versions en aquest pla.
 - **Després de M1:** ordre i dimensió dels slices següents, mantenint les dependències funcionals i tot l’abast V1.
 
-El pla continua sotmès a revisió humana per als increments pendents. M0 està completada i versionada; la implementació de M1 encara no s’ha iniciat. D1–D11 estan aprovades i aquesta actualització documental queda pendent de revisió abans de commit o implementació. No s’han fet commit ni push d’aquests canvis.
+El pla continua sotmès a revisió humana per als increments pendents. M0 està completada i versionada. Les decisions D1–D11 i la documentació de M1.1 estan revisades i aprovades, amb commits a la branca `codex/m1-1-documentacio`, ja publicada a GitHub. La [PR #1](https://github.com/Lhisa/Nestly/pull/1) està oberta i pendent de revisió final i integració a `main`. La implementació de M1.2 encara no s’ha iniciat i requereix una nova autorització.
