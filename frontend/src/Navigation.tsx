@@ -21,12 +21,12 @@ export function Navigation() {
     <>
       <nav className="desktop-navigation" aria-label="Navegació principal desktop">
         {desktopLinks.map(({ to, label }) => (
-          <NavLink key={to} to={to} end>{label}</NavLink>
+          <NavLink key={to} to={to} end={to !== '/items'}>{label}</NavLink>
         ))}
       </nav>
       <nav className="mobile-navigation" aria-label="Navegació principal mòbil">
         {primaryLinks.map(({ to, label }) => (
-          <NavLink key={to} to={to} end>{label}</NavLink>
+          <NavLink key={to} to={to} end={to !== '/items'}>{label}</NavLink>
         ))}
         <Link
           to="/mes"
