@@ -1,3 +1,5 @@
+import { PostgresHomeItemsRepository } from './infrastructure/postgres-home-items-repository.js';
+import { PostgresHomeItemsReader } from './infrastructure/postgres-home-items-reader.js';
 import { Pool } from 'pg';
 import { createApp } from './http/app.js';
 import { PostgresClassificationCatalog } from './infrastructure/postgres-classification-catalog.js';
@@ -8,7 +10,7 @@ if (!connectionString) {
 }
 const pool = new Pool({ connectionString, connectionTimeoutMillis: 5000 });
 pool.on('error', (error) => console.error('Error inesperat de PostgreSQL:', error));
-const app = createApp(new PostgresClassificationCatalog(pool));
+const app = createApp(new PostgresClassificationCatalog(pool), { repository: new PostgresHomeItemsRepository(pool), reader: new PostgresHomeItemsReader(pool) });
 const port = 3000;
 
 app.listen(port, '127.0.0.1', () => {

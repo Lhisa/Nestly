@@ -32,3 +32,38 @@ nav a.active { font-weight: bold; text-decoration-thickness: 3px; }
 .classification-fields label { display: block; margin-top: 0.75rem; }
 .classification-fields select { width: 100%; padding: 0.5rem; font: inherit; }
 .classification-fields select:focus-visible, button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+/* Navegació v0.1: mateixa estructura i enllaços, amb la paleta Nestly. */
+nav a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: .5rem;
+  transition: background-color .15s ease;
+}
+nav a:hover { background: var(--color-surface); }
+nav a.active {
+  color: var(--color-action-primary);
+  background: var(--color-surface);
+  box-shadow: inset 3px 0 var(--color-action-primary);
+}
+nav a:focus-visible {
+  outline: 3px solid var(--color-action-primary);
+  outline-offset: 3px;
+}
+.mobile-navigation {
+  background: var(--color-background);
+  border-color: var(--color-border-subtle);
+  gap: .25rem;
+  padding: .25rem .25rem calc(.25rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 48rem) {
+  .desktop-navigation {
+    flex-basis: 12rem;
+    padding: 2rem 1rem;
+    gap: .5rem;
+    border-color: var(--color-border-subtle);
+  }
+  .desktop-navigation a { padding: .8rem 1rem; }
+  .shell-content { padding: 2rem clamp(1.5rem, 3vw, 3rem); }
+}
