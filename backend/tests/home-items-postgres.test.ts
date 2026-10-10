@@ -1,3 +1,4 @@
+import { PostgresHomeItemsReader } from '../src/infrastructure/postgres-home-items-reader.js';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
@@ -43,6 +44,18 @@ test.skipIf(!connectionString)('PostgreSQL real: N IDs, estats i rollback en esq
     expect(result.rows[0].total).toBe(0);
     expect((await pool.query('SELECT count(*)::int AS total FROM item')).rows[0].total).toBe(200);
     expect((await pool.query('SELECT count(*)::int AS total FROM item_llista')).rows[0].total).toBe(0);
+    const reader = new PostgresHomeItemsReader(pool);
+    const listed = await reader.list();
+    expect(listed).toHaveLength(200);
+    const expected = [...listed].sort((a, b) => b.data_creacio.getTime() - a.data_creacio.getTime() || b.id - a.id);
+    expect(listed.map((item) => item.id)).toEqual(expected.map((item) => item.id));
+    expect(await reader.findById(listed[0].id)).toEqual(listed[0]);
+    expect(await reader.findById(2147483647)).toBeNull();
+    await pool.query("INSERT INTO botiga (nom) VALUES ('Test')");
+    await pool.query("INSERT INTO llista_nado (nom, botiga_id) VALUES ('Test', 1)");
+    await pool.query("INSERT INTO item_llista (item_id, llista_id, estat_comanda, preu_total) VALUES ($1, 1, 'demanat', 1)", [listed[0].id]);
+    expect(await reader.findById(listed[0].id)).toBeNull();
+    expect(await reader.list()).toHaveLength(199);
   } finally {
     await pool?.end();
     try {
