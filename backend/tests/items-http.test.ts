@@ -42,19 +42,31 @@ test.each([1, 3, 100])('POST crea %s unitats i serialitza dates UTC', async (qua
   expect(deps.repository.createAtomically).toHaveBeenCalledOnce();
 });
 test.each([
-  { quantitat: 0 }, { quantitat: 101 }, { quantitat: 1.5 }, { quantitat: '3' }, { quantitat: null },
-  { nom: '123!' }, { nom: 'a'.repeat(101) }, { nom: 42 },
-  { estat_preparacio: 'preparat' }, { estat_preparacio: null },
-  { categoria_id: 99 }, { subcategoria_id: 99 }, { subcategoria_id: 4 },
-  { categoria_id: '1' }, { foto_ref: 'forbidden' }, { id: 8 }, JSON.parse('{"__proto__":"forbidden"}'),
-])('POST rebutja entrada invàlida sense crear', async (override) => {
+  { override: { quantitat: 0 }, field: 'quantitat' },
+  { override: { quantitat: 101 }, field: 'quantitat' },
+  { override: { quantitat: 1.5 }, field: 'quantitat' },
+  { override: { quantitat: '3' }, field: 'quantitat' },
+  { override: { quantitat: null }, field: 'quantitat' },
+  { override: { nom: '123!' }, field: 'nom' },
+  { override: { nom: 'a'.repeat(101) }, field: 'nom' },
+  { override: { nom: 42 }, field: 'nom' },
+  { override: { estat_preparacio: 'preparat' }, field: 'estat_preparacio' },
+  { override: { estat_preparacio: null }, field: 'estat_preparacio' },
+  { override: { categoria_id: 99 }, field: 'categoria_id' },
+  { override: { subcategoria_id: 99 }, field: 'subcategoria_id' },
+  { override: { subcategoria_id: 4 }, field: 'subcategoria_id' },
+  { override: { categoria_id: '1' }, field: 'categoria_id' },
+  { override: { foto_ref: 'forbidden' }, field: 'foto_ref' },
+  { override: { id: 8 }, field: 'id' },
+  { override: JSON.parse('{"__proto__":"forbidden"}'), field: '__proto__' },
+])('POST rebutja entrada invàlida sense crear', async ({ override, field }) => {
   const { post, deps } = await start();
   const response = await post({ ...body, ...override });
   expect(response.status).toBe(400);
   const result = await response.json();
   expect(result.code).toBe('VALIDATION_ERROR');
   expect(result.message).toBe('Hi ha camps invàlids');
-  expect(Object.keys(result.fieldErrors).length).toBeGreaterThan(0);
+  expect(Object.hasOwn(result.fieldErrors, field)).toBe(true);
   expect(deps.repository.createAtomically).not.toHaveBeenCalled();
 });
 test.each(Object.keys(body))('POST exigeix %s sense defaults', async (key) => {

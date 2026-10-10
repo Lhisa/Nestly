@@ -4,18 +4,20 @@ import { PostgresHomeItemsRepository } from '../src/infrastructure/postgres-home
 
 const input = { nom: 'Body', categoria_id: 1, subcategoria_id: 2, quantitat: 3, estat_preparacio: 'preparada' as const };
 function setup(failure?: string, rollbackFailure = false) {
+  const persistenceError = new Error('SQL failure');
+  const rollbackError = new Error('rollback failure');
   let inserts = 0;
   const query = vi.fn(async (sql: string, values?: unknown[]) => {
     const command = sql.trim().split(/\s/)[0];
     if (command === 'INSERT') inserts++;
-    if (command === failure && (command !== 'INSERT' || inserts === 2)) throw new Error('SQL failure');
-    if (command === 'ROLLBACK' && rollbackFailure) throw new Error('rollback failure');
+    if (command === failure && (command !== 'INSERT' || inserts === 2)) throw persistenceError;
+    if (command === 'ROLLBACK' && rollbackFailure) throw rollbackError;
     return { rows: [{ id: inserts, nom: values?.[0], estat_preparacio: values?.[2] }] };
   });
   const release = vi.fn();
   const connect = vi.fn().mockResolvedValue({ query, release });
   const repository = new PostgresHomeItemsRepository({ connect } as unknown as Pool);
-  return { repository, query, release, connect };
+  return { repository, query, release, connect, persistenceError, rollbackError };
 }
 test('N insercions parametritzades al mateix client abans de COMMIT', async () => {
   const { repository, query, release, connect } = setup();
@@ -40,8 +42,12 @@ test('fallada BEGIN descarta connexió', async () => {
   expect(release.mock.calls[0][0]).toBeInstanceOf(Error);
 });
 test('fallada ROLLBACK conserva ambdós errors i descarta connexió', async () => {
-  const { repository, release } = setup('INSERT', true);
-  await expect(repository.createAtomically(input)).rejects.toBeInstanceOf(AggregateError);
+  const { repository, release, persistenceError, rollbackError } = setup('INSERT', true);
+  const error = await repository.createAtomically(input).catch((error: unknown) => error);
+  expect(error).toBeInstanceOf(AggregateError);
+  expect((error as AggregateError).errors).toHaveLength(2);
+  expect((error as AggregateError).errors[0]).toBe(persistenceError);
+  expect((error as AggregateError).errors[1]).toBe(rollbackError);
   expect(release.mock.calls[0][0]).toBeInstanceOf(Error);
 });
 test('fallada connect es propaga', async () => {
