@@ -1,6 +1,6 @@
 # M1.3 — Formulari i prova humana de la fase 3
 
-Estat: implementat, pendent de revisió humana del codi i autorització explícita del commit. La usuària ha comunicat que ha completat les 9 proves manuals de la guia. Els tests automàtics no substitueixen aquesta validació. No hi ha commit de la fase 3.
+Estat: fase 3 implementada i validada manualment per la usuària, amb les 9 proves manuals de la guia completades. Els tests automàtics no substitueixen aquesta validació. El commit de la fase 3 és fb30049. La PR #4 (https://github.com/Lhisa/Nestly/pull/4) està oberta i pendent d’aprovació humana per al merge. M1.3 encara no està integrat a main.
 
 ## Abast i decisions
 
