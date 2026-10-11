@@ -19,7 +19,7 @@ function mount(path = '/items/nou', post?: (init?: RequestInit) => Promise<Respo
   const fetch = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/api/categories') return Response.json({ categories });
     if (init?.method === 'POST') return post ? post(init) : Response.json({ created_count: 3, items: [item] }, { status: 201 });
-    return Response.json({ items: [] });
+    return Response.json({ groups: [], filters: { categoria_id: null, subcategoria_id: null }, corrections: [], inventory_count: 0, matched_count: 0 });
   });
   vi.stubGlobal('fetch', fetch);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(client);
@@ -119,7 +119,7 @@ test('llistat buit, dades independents i error amb reintent', async () => {
   await routers[0].navigate('/inici'); await routers[0].navigate('/items');
   // Força una nova lectura amb error i després reintent amb dades.
   await clients[0].invalidateQueries({ queryKey: ['items'] }); await screen.findByRole('alert');
-  fetch.mockImplementationOnce(async () => Response.json({ items: [item, { ...item, id: 28 }] }));
+  fetch.mockImplementationOnce(async () => Response.json({ filters: { categoria_id: null, subcategoria_id: null }, corrections: [], inventory_count: 2, matched_count: 2, groups: [27, 28].map((id) => ({ key: String(id), name: 'Body', category: { id: 1, name: 'Roba' }, subcategory: { id: 2, name: 'Bodies' }, total_units: 1, preparation_counts: { prepared: 0, not_prepared: 1, unspecified: 0 }, units: [{ id, name: 'Body', preparation_status: 'no_preparada', created_at: item.data_creacio }] })) }));
   await user.click(screen.getByRole('button', { name: 'Torna-ho a provar' })); await screen.findAllByText('Body');
   expect(screen.getAllByRole('listitem')).toHaveLength(2);
 });

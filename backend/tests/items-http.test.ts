@@ -2,6 +2,9 @@ import type { Server } from 'node:http';
 import { afterEach, expect, test, vi } from 'vitest';
 import { createApp } from '../src/http/app.js';
 import type { CreateHomeItemsInput, Item } from '../src/domain/item.js';
+import { projectGroupedHomeItems } from '../src/application/home-items-projection.js';
+import type { HomeItemProjectionInput } from '../src/application/home-items-projection.js';
+import { resolveHomeItemsFilters } from '../src/application/home-items-filters.js';
 
 let server: Server | undefined;
 afterEach(async () => {
@@ -14,7 +17,7 @@ const jsonItem = { ...item, data_creacio: '2026-10-10T15:00:00.000Z' };
 function dependencies() {
   return {
     repository: { createAtomically: vi.fn(async (input: CreateHomeItemsInput) => Array.from({ length: input.quantitat }, (_, index) => ({ ...item, id: 27 + index, nom: input.nom, estat_preparacio: input.estat_preparacio }))) },
-    reader: { list: vi.fn(async () => [item]), findById: vi.fn(async (_id: number): Promise<Item | null> => item) },
+    reader: { list: vi.fn(async () => [item]), listForProjection: vi.fn(async (): Promise<HomeItemProjectionInput[]> => [item]), findById: vi.fn(async (_id: number): Promise<Item | null> => item) },
   };
 }
 async function start(deps = dependencies()) {
@@ -89,16 +92,25 @@ test('JSON malformat retorna validació estructurada', async () => {
   expect((await response.json()).code).toBe('VALIDATION_ERROR');
 });
 test('GET llista amb dades i buit', async () => {
-  const { get, deps } = await start();
-  expect(await (await get()).json()).toEqual({ items: [jsonItem] });
-  deps.reader.list.mockResolvedValueOnce([]);
+  const { get, deps, catalog } = await start();
+  const categories = await catalog.read();
+  expect(await (await get()).json()).toEqual(projectGroupedHomeItems([item], categories, resolveHomeItemsFilters([], categories)));
+  deps.reader.listForProjection.mockResolvedValueOnce([]);
   const response = await get();
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ items: [] });
+  expect(await response.json()).toEqual({ groups: [], filters: { categoria_id: null, subcategoria_id: null }, corrections: [], inventory_count: 0, matched_count: 0 });
 });
-test('GET rebutja paràmetres de consulta', async () => {
-  const { get, deps } = await start();
-  expect((await get('?categoria_id=1')).status).toBe(400);
+test.each([
+  'categoria_id=1', 'subcategoria_id=2', 'categoria_id=1&categoria_id=1',
+  'categoria_id=1&categoria_id=01', 'categoria_id=x&subcategoria_id=2',
+  'categoria_id=3&subcategoria_id=2', 'categoria_id=99&subcategoria_id=99', 'other=1',
+])('GET aplica filtres i correccions preservant repeticions: %s', async (query) => {
+  const { get, deps, catalog } = await start();
+  const response = await get('?' + query);
+  const categories = await catalog.read();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(projectGroupedHomeItems([item], categories, resolveHomeItemsFilters(new URLSearchParams(query), categories)));
+  expect(deps.reader.listForProjection).toHaveBeenCalledOnce();
   expect(deps.reader.list).not.toHaveBeenCalled();
 });
 test('GET per ID retorna Item i 404 quan no existeix', async () => {
@@ -111,6 +123,30 @@ test('GET per ID retorna Item i 404 quan no existeix', async () => {
   const missing = await get('/28');
   expect(missing.status).toBe(404);
   expect((await missing.json()).code).toBe('NOT_FOUND');
+});
+
+test('GET agrupat serialitza unitats, null i recomptes sense canviar el detall', async () => {
+  const { get, deps } = await start();
+  deps.reader.listForProjection.mockResolvedValueOnce([item, { ...item, id: 28, estat_preparacio: null }]);
+  const response = await get();
+  const result = await response.json();
+  expect(response.status).toBe(200);
+  expect(Object.keys(result).sort()).toEqual(['corrections', 'filters', 'groups', 'inventory_count', 'matched_count']);
+  expect(result.inventory_count).toBe(2);
+  expect(result.matched_count).toBe(2);
+  expect(result.groups).toHaveLength(1);
+  expect(result.groups[0].preparation_counts).toEqual({ prepared: 0, not_prepared: 1, unspecified: 1 });
+  expect(result.groups[0].units[0]).toEqual({ id: 28, name: 'Body blau', preparation_status: null, created_at: jsonItem.data_creacio });
+  expect(await (await get('/27')).json()).toEqual({ item: jsonItem });
+});
+
+test('error de catàleg en GET agrupat retorna 500 sense inventari fictici', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const { get, catalog } = await start();
+  catalog.read.mockRejectedValueOnce(new Error('catalog unavailable'));
+  const response = await get('?subcategoria_id=2');
+  expect(response.status).toBe(500);
+  expect(await response.json()).toEqual({ code: 'INTERNAL_ERROR', message: 'No s’ha pogut completar l’operació amb Items.' });
 });
 test.each(['0', '-1', '1.5', 'abc', '2147483648', '1e2', '1x', '999999999999999999999'])('GET rebutja ID %s', async (id) => {
   const { get, deps } = await start();
@@ -129,7 +165,7 @@ test.each(['post', 'list', 'detail', 'catalog'])('error intern %s no filtra deta
   const { post, get, deps, catalog } = await start();
   const error = new Error('SQL secret password stack');
   if (operation === 'post') deps.repository.createAtomically.mockRejectedValueOnce(error);
-  if (operation === 'list') deps.reader.list.mockRejectedValueOnce(error);
+  if (operation === 'list') deps.reader.listForProjection.mockRejectedValueOnce(error);
   if (operation === 'detail') deps.reader.findById.mockRejectedValueOnce(error);
   if (operation === 'catalog') catalog.read.mockRejectedValueOnce(error);
   const response = operation === 'post' || operation === 'catalog' ? await post(body) : await get(operation === 'detail' ? '/27' : '');
