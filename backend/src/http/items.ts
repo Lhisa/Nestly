@@ -2,14 +2,16 @@ import express from 'express';
 import type { ClassificationCatalogReader } from '../application/get-classification-catalog.js';
 import { createHomeItems } from '../application/create-home-items.js';
 import type { HomeItemsRepository } from '../application/create-home-items.js';
-import { getHomeItem, listHomeItems } from '../application/get-home-items.js';
+import { getHomeItem } from '../application/get-home-items.js';
+import { getGroupedHomeItems } from '../application/get-grouped-home-items.js';
+import type { GroupedHomeItemsReader } from '../application/get-grouped-home-items.js';
 import type { HomeItemsReader } from '../application/get-home-items.js';
 import { ItemValidationError } from '../domain/item.js';
 import type { CreateHomeItemsInput } from '../domain/item.js';
 
 export interface ItemsDependencies {
   repository: HomeItemsRepository;
-  reader: HomeItemsReader;
+  reader: HomeItemsReader & GroupedHomeItemsReader;
 }
 
 function parseCreation(body: unknown): CreateHomeItemsInput {
@@ -38,8 +40,8 @@ export function createItemsRouter(catalog: ClassificationCatalogReader, dependen
     response.status(201).json({ created_count: items.length, items });
   });
   router.get('/', async (request, response) => {
-    if (Object.keys(request.query).length) throw new ItemValidationError({ query: 'No s’admeten paràmetres de consulta a M1.3.' });
-    response.json({ items: await listHomeItems(dependencies.reader) });
+    const query = new URL(request.originalUrl, 'http://localhost').searchParams;
+    response.json(await getGroupedHomeItems(query, dependencies.reader, catalog));
   });
   router.get('/:id', async (request, response) => {
     const raw = request.params.id;
