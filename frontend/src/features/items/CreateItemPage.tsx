@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
+import { getInventoryContext, saveCreationContext } from './inventory-context';
+import { canonicalItemsSearch, provisionalItemFilters } from './items-url';
 import { ClassificationSelectors } from './ClassificationSelectors';
 import { createItems, ItemsApiError } from './items-api';
 import { UnsavedChangesGuard } from './UnsavedChangesGuard';
@@ -11,6 +13,8 @@ interface Fields { nom: string; categoria_id: string; subcategoria_id: string; q
 const fieldOrder: (keyof Fields)[] = ['nom', 'categoria_id', 'subcategoria_id', 'quantitat', 'estat_preparacio'];
 export function CreateItemPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const previous = getInventoryContext(location.state?.inventoryContextKey);
   const cache = useQueryClient();
   const [generalError, setGeneralError] = useState('');
   const completed = useRef(false);
@@ -28,7 +32,14 @@ export function CreateItemPage() {
       completed.current = true;
       form.reset(values);
       await cache.invalidateQueries({ queryKey: ['items'] });
-      void navigate('/items', { state: { createdCount: result.created_count } });
+      const previousSearch = previous?.search ?? location.search;
+      const filters = provisionalItemFilters(previousSearch);
+      const adjusted = {
+        categoria_id: filters.categoria_id !== null && filters.categoria_id !== Number(values.categoria_id) ? null : filters.categoria_id,
+        subcategoria_id: filters.subcategoria_id !== null && filters.subcategoria_id !== Number(values.subcategoria_id) ? null : filters.subcategoria_id,
+      };
+      const creationKey = saveCreationContext({ ids: result.items.map((item) => item.id), count: result.created_count, previousSearch, filters: adjusted, filtersChanged: adjusted.categoria_id !== filters.categoria_id || adjusted.subcategoria_id !== filters.subcategoria_id });
+      void navigate({ pathname: '/items', search: canonicalItemsSearch(previousSearch, adjusted) }, { state: { createdCount: result.created_count, creationKey } });
     } catch (error) {
       if (error instanceof ItemsApiError && error.fieldErrors) {
         let first: keyof Fields | undefined;

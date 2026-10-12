@@ -28,6 +28,13 @@ export async function fetchItems(signal?: AbortSignal, query = ''): Promise<Grou
   if (!response.ok) throw new Error('No s’han pogut carregar els Items.');
   return response.json();
 }
+export type ItemDetailResponse = Omit<ItemResponse, 'estat_preparacio'> & { estat_preparacio: ItemUnitSummary['preparation_status'] };
+export async function fetchItem(id: string, signal?: AbortSignal): Promise<ItemDetailResponse | null> {
+  const response = await fetch(`/api/items/${encodeURIComponent(id)}`, { signal });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error('No s’ha pogut carregar l’Item.');
+  return (await response.json()).item;
+}
 export async function createItems(input: ItemInput): Promise<{ created_count: number; items: ItemResponse[] }> {
   const response = await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
   if (response.status === 201) return response.json();

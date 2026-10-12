@@ -84,13 +84,13 @@ test('resposta antiga retardada no sobreescriu el canvi més recent', async () =
   expect(screen.getByLabelText<HTMLSelectElement>('Subcategoria', { selector: '#desktop-subcategory' }).value).toBe('');
 });
 
-test('unitat individual sense desplegable, comptador ni enllaç de detall', async () => {
+test('unitat individual sense desplegable ni comptador i amb enllaç de detall', async () => {
   mount(async () => Response.json(response()));
   await screen.findByText('Item 1');
   expect(screen.getByText('Estat no indicat')).toBeTruthy();
   expect(screen.queryByRole('button', { name: /Desplega/ })).toBeNull();
   expect(screen.queryByText('1 unitats')).toBeNull();
-  expect(screen.queryByRole('link', { name: /body/ })).toBeNull();
+  expect(screen.getByRole('link', { name: /body/ }).getAttribute('href')).toBe('/items/1');
 });
 
 test('grup plegat, cinc unitats inicials i paginació en blocs de cinc', async () => {
