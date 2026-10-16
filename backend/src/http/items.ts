@@ -1,3 +1,5 @@
+import { acquirePhotoOperation, readCreationMultipart, PhotoHttpError } from './items-multipart.js';
+import type { ItemPhotoProcessor, ItemPhotoStorage, NormalizedItemPhoto } from '../application/item-photos.js';
 import express from 'express';
 import type { ClassificationCatalogReader } from '../application/get-classification-catalog.js';
 import { createHomeItems } from '../application/create-home-items.js';
@@ -9,7 +11,15 @@ import type { HomeItemsReader } from '../application/get-home-items.js';
 import { ItemValidationError } from '../domain/item.js';
 import type { CreateHomeItemsInput } from '../domain/item.js';
 
+export interface ItemsPhotoDependencies {
+  processor: ItemPhotoProcessor;
+  storage: () => ItemPhotoStorage;
+  read: (reference: string) => Promise<NormalizedItemPhoto | null>;
+  reportIncident: (error: unknown) => void;
+}
+
 export interface ItemsDependencies {
+  photos?: ItemsPhotoDependencies;
   repository: HomeItemsRepository;
   reader: HomeItemsReader & GroupedHomeItemsReader;
 }
@@ -35,6 +45,19 @@ export function createItemsRouter(catalog: ClassificationCatalogReader, dependen
   const router = express.Router();
   router.use(express.json());
   router.post('/', async (request, response) => {
+    if (request.is('multipart/form-data')) {
+      if (!dependencies.photos) throw new PhotoHttpError(503, 'PHOTO_STORAGE_NOT_CONFIGURED');
+      const release = acquirePhotoOperation();
+      try {
+        const parsed = await readCreationMultipart(request, response);
+        const items = await createHomeItems(parseCreation(parsed.data), catalog, dependencies.repository, {
+          bytes: parsed.bytes, processor: dependencies.photos.processor,
+          storage: dependencies.photos.storage(), reportIncident: dependencies.photos.reportIncident,
+        });
+        response.status(201).json({ created_count: items.length, items });
+      } finally { release(); }
+      return;
+    }
     const input = parseCreation(request.body);
     const items = await createHomeItems(input, catalog, dependencies.repository);
     response.status(201).json({ created_count: items.length, items });

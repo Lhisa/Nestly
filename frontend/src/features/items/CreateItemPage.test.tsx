@@ -135,3 +135,58 @@ test.each(['1', '100'])('quantitat límit %s i nom de 100 caràcters admesos', a
   expect(posted.quantitat).toBe(Number(quantity)); expect(posted.nom).toHaveLength(100);
   const event = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
 });
+
+function photoURLs() {
+  const OriginalURL = URL;
+  vi.stubGlobal('URL', class extends OriginalURL { static createObjectURL = vi.fn(() => 'blob:photo'); static revokeObjectURL = vi.fn(); });
+}
+test('photo upload preserves quantity and prevents duplicate submissions', async () => {
+  photoURLs();
+  let finish!: (value: Response) => void;
+  const { user, fetch } = mount('/items/nou', () => new Promise(resolve => { finish = resolve; }));
+  await fill(user);
+  fireEvent.change(screen.getByLabelText('Quantitat (obligatòria)'), { target: { value: '3' } });
+  await user.upload(screen.getByLabelText('Fotografia (opcional)'), new File(['x'], 'body.png', { type: 'image/png' }));
+  await user.dblClick(screen.getByRole('button', { name: 'Registrar Items' }));
+  const calls = fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  expect(calls).toHaveLength(1);
+  const body = calls[0][1]?.body as FormData;
+  expect(JSON.parse(body.get('data') as string).quantitat).toBe(3);
+  expect(body.get('photo')).toBeInstanceOf(File);
+  expect(calls[0][1]?.headers).toBeUndefined();
+  finish(Response.json({ code: 'INTERNAL_ERROR' }, { status: 500 }));
+  await screen.findByRole('alert');
+  expect(screen.getByLabelText<HTMLInputElement>('Nom de l’Item (obligatori)').value).toBe('Body');
+  expect(screen.getByRole('img', { name: 'Previsualització de la fotografia seleccionada' })).toBeTruthy();
+});
+test('server photo validation keeps fields and allows removal before JSON retry', async () => {
+  photoURLs();
+  const { user, fetch } = mount('/items/nou', async () => Response.json({ code: 'VALIDATION_ERROR', fieldErrors: { photo: 'Imatge corrupta.' } }, { status: 400 }));
+  await fill(user);
+  await user.upload(screen.getByLabelText('Fotografia (opcional)'), new File(['x'], 'body.png', { type: 'image/png' }));
+  await user.click(screen.getByRole('button', { name: 'Registrar Items' }));
+  await screen.findByText('Imatge corrupta.');
+  expect(screen.getByLabelText<HTMLInputElement>('Nom de l’Item (obligatori)').value).toBe('Body');
+  await user.click(screen.getByRole('button', { name: 'Retirar fotografia' }));
+  await user.click(screen.getByRole('button', { name: 'Registrar Items' }));
+  const calls = fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  expect(typeof calls.at(-1)?.[1]?.body).toBe('string');
+});
+test('invalid photo prevents a POST', async () => {
+  const { user, fetch } = mount();
+  await fill(user);
+  fireEvent.change(screen.getByLabelText('Fotografia (opcional)'), { target: { files: [new File(['x'], 'bad.heic', { type: 'image/heic' })] } });
+  await user.click(screen.getByRole('button', { name: 'Registrar Items' }));
+  expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
+});
+
+test('successful photo creation keeps the existing confirmation and contextual navigation', async () => {
+  photoURLs();
+  const { user, router } = mount();
+  await fill(user);
+  await user.upload(screen.getByLabelText('Fotografia (opcional)'), new File(['x'], 'body.png', { type: 'image/png' }));
+  await user.click(screen.getByRole('button', { name: 'Registrar Items' }));
+  await screen.findByText('S’han creat 3 Items.');
+  expect(router.state.location.pathname).toBe('/items');
+  expect(screen.queryByRole('dialog')).toBeNull();
+});

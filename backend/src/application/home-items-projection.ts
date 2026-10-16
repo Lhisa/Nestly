@@ -25,6 +25,7 @@ export interface ItemUnitSummary {
   id: number;
   name: string;
   preparation_status: ReadPreparationState;
+  foto_ref: string | null;
   /** ISO 8601 UTC. */
   created_at: string;
 }
@@ -85,6 +86,7 @@ export interface HomeItemProjectionInput {
   subcategoria_id: number;
   estat_preparacio: ReadPreparationState;
   data_creacio: Date;
+  foto_ref: string | null;
 }
 
 export function projectGroupedHomeItems(
@@ -134,6 +136,7 @@ export function projectGroupedHomeItems(
       id: item.id,
       name: item.nom,
       preparation_status: item.estat_preparacio,
+      foto_ref: item.foto_ref ?? null,
       created_at: item.data_creacio.toISOString(),
     });
   }

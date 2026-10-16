@@ -11,7 +11,7 @@ const catalog = [
   { id: 4, nom: 'Descans', subcategories: [{ id: 5, nom: 'Mantes' }] },
 ];
 const item = (id: number, nom: string, day = 2, subcategoria_id = 2, estat_preparacio: HomeItemProjectionInput['estat_preparacio'] = null): HomeItemProjectionInput => ({
-  id, nom, subcategoria_id, estat_preparacio, data_creacio: new Date(`2026-10-0${day}T12:00:00Z`),
+  id, nom, subcategoria_id, estat_preparacio, foto_ref: null, data_creacio: new Date(`2026-10-0${day}T12:00:00Z`),
 });
 const project = (items: readonly HomeItemProjectionInput[], query = '') => projectGroupedHomeItems(items, catalog, resolveHomeItemsFilters(new URLSearchParams(query), catalog));
 
@@ -25,9 +25,9 @@ test('agrupa noms equivalents, preserva originals i compta estats nuls', () => {
     preparation_counts: { prepared: 1, not_prepared: 1, unspecified: 1 },
   });
   expect(result.groups[0].units).toEqual([
-    { id: 3, name: 'COTÓ', preparation_status: null, created_at: '2026-10-03T12:00:00.000Z' },
-    { id: 2, name: 'cotó', preparation_status: 'no_preparada', created_at: '2026-10-02T12:00:00.000Z' },
-    { id: 1, name: ' COTO\u0301 ', preparation_status: 'preparada', created_at: '2026-10-01T12:00:00.000Z' },
+    { id: 3, name: 'COTÓ', preparation_status: null, foto_ref: null, created_at: '2026-10-03T12:00:00.000Z' },
+    { id: 2, name: 'cotó', preparation_status: 'no_preparada', foto_ref: null, created_at: '2026-10-02T12:00:00.000Z' },
+    { id: 1, name: ' COTO\u0301 ', preparation_status: 'preparada', foto_ref: null, created_at: '2026-10-01T12:00:00.000Z' },
   ]);
 });
 
@@ -110,4 +110,13 @@ test('adaptador consulta el repositori excloent item_llista i conserva null', as
   expect(await reader.listForProjection()).toEqual(rows);
   expect(query).toHaveBeenCalledOnce();
   expect(query.mock.calls[0][0]).toContain('WHERE NOT EXISTS (SELECT 1 FROM item_llista il WHERE il.item_id = i.id)');
+});
+
+test('photographs stay on units and never alter group identity or counts', () => {
+  const result = project([{ ...item(1, 'body'), foto_ref: 'items/a.webp' }, { ...item(2, 'BODY'), foto_ref: 'items/b.webp' }, item(3, 'Body')]);
+  expect(result.groups).toHaveLength(1);
+  expect(result.groups[0].units.map(unit => unit.foto_ref)).toEqual([null, 'items/b.webp', 'items/a.webp']);
+  expect(result.groups[0].total_units).toBe(3);
+  expect(result.groups[0]).not.toHaveProperty('foto_ref');
+  expect(result.groups[0].key).toBe(project([item(1, 'body')]).groups[0].key);
 });

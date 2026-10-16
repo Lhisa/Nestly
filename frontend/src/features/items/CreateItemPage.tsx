@@ -1,3 +1,5 @@
+import { ItemPhotoPicker } from './ItemPhotoPicker';
+import type { ItemInput } from './items-api';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,18 +19,21 @@ export function CreateItemPage() {
   const previous = getInventoryContext(location.state?.inventoryContextKey);
   const cache = useQueryClient();
   const [generalError, setGeneralError] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState('');
   const completed = useRef(false);
   const submitting = useRef(false);
-  const mutation = useMutation({ mutationFn: createItems, retry: false });
+  const mutation = useMutation({ mutationFn: ({ input, photo }: { input: ItemInput; photo: File | null }) => createItems(input, photo), retry: false });
   const form = useForm<Fields>({ mode: 'onBlur', defaultValues: { nom: '', categoria_id: '', subcategoria_id: '', quantitat: '1', estat_preparacio: 'no_preparada' } });
   const { register, control, watch, setValue, setError, setFocus, handleSubmit, formState: { errors, isDirty } } = form;
   const categoryId = watch('categoria_id');
   const subcategoryId = watch('subcategoria_id');
   const submit = handleSubmit(async (values) => {
     if (submitting.current) return;
+    if (photoError) { document.getElementById('item-photo')?.focus(); return; }
     submitting.current = true; setGeneralError('');
     try {
-      const result = await mutation.mutateAsync({ nom: values.nom.trim(), categoria_id: Number(values.categoria_id), subcategoria_id: Number(values.subcategoria_id), quantitat: Number(values.quantitat), estat_preparacio: values.estat_preparacio });
+      const result = await mutation.mutateAsync({ photo, input: { nom: values.nom.trim(), categoria_id: Number(values.categoria_id), subcategoria_id: Number(values.subcategoria_id), quantitat: Number(values.quantitat), estat_preparacio: values.estat_preparacio } });
       completed.current = true;
       form.reset(values);
       await cache.invalidateQueries({ queryKey: ['items'] });
@@ -42,14 +47,15 @@ export function CreateItemPage() {
       void navigate({ pathname: '/items', search: canonicalItemsSearch(previousSearch, adjusted) }, { state: { createdCount: result.created_count, creationKey } });
     } catch (error) {
       if (error instanceof ItemsApiError && error.fieldErrors) {
+        if (error.fieldErrors.photo) { setPhotoError(error.fieldErrors.photo); document.getElementById('item-photo')?.focus(); }
         let first: keyof Fields | undefined;
         for (const field of fieldOrder) if (error.fieldErrors[field]) { setError(field, { type: 'server', message: error.fieldErrors[field] }); first ??= field; }
-        if (first) setFocus(first); else setGeneralError(error.message);
-      } else setGeneralError('No s’ha pogut confirmar el registre. Revisa el llistat abans de tornar-ho a intentar.');
+        if (first) setFocus(first); else if (!error.fieldErrors.photo) setGeneralError(error.message);
+      } else setGeneralError(error instanceof ItemsApiError ? error.message : 'No s’ha pogut confirmar el registre. Revisa el llistat abans de tornar-ho a intentar.');
     } finally { submitting.current = false; }
   });
   return <div className="item-form-page"><header className="editorial-heading"><p className="eyebrow">Preparatius · A casa</p><h1>Un lloc per a cada petit detall</h1><p>Registra els objectes que ja tens a casa. Cada unitat tindrà el seu propi registre.</p></header>
-    <UnsavedChangesGuard dirty={isDirty} completed={completed} />
+    <UnsavedChangesGuard dirty={isDirty || photo !== null} completed={completed} />
     <form noValidate onSubmit={submit} aria-label="Registrar Items" aria-busy={mutation.isPending}>
       {generalError && <p className="general-error" role="alert">{generalError}</p>}
       <section className="form-block" aria-labelledby="identity-heading"><header><span className="editorial-number" aria-hidden="true">01</span><div><h2 id="identity-heading">Què afegim a casa?</h2><p>Un nom i una classificació per trobar-ho fàcilment.</p></div></header>
@@ -72,6 +78,7 @@ export function CreateItemPage() {
           <label className="radio-card"><input type="radio" value="preparada" {...register('estat_preparacio')} /><span>Preparat</span></label>
         </div>{errors.estat_preparacio && <p className="field-error" role="alert">{errors.estat_preparacio.message}</p>}</fieldset>
       </section>
+      <ItemPhotoPicker photo={photo} error={photoError} disabled={mutation.isPending} onChange={setPhoto} onError={setPhotoError} />
       <div className="form-actions"><button type="button" disabled={mutation.isPending} onClick={() => void navigate('/items')}>Cancel·lar</button><button className="primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Registrant…' : 'Registrar Items'}</button></div>
     </form></div>;
 }

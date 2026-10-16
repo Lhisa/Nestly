@@ -1,3 +1,4 @@
+import { ItemPersistenceUncertainError } from '../src/application/create-home-items.js';
 import type { Pool } from 'pg';
 import { expect, test, vi } from 'vitest';
 import { PostgresHomeItemsRepository } from '../src/infrastructure/postgres-home-items-repository.js';
@@ -26,12 +27,12 @@ test('N insercions parametritzades al mateix client abans de COMMIT', async () =
   expect(items.every((item) => item.estat_preparacio === 'preparada')).toBe(true);
   expect(connect).toHaveBeenCalledOnce();
   expect(query.mock.calls.map(([sql]) => sql.trim().split(/\s/)[0])).toEqual(['BEGIN', 'INSERT', 'INSERT', 'INSERT', 'COMMIT']);
-  expect(query.mock.calls[1][1]).toEqual(['Body', 2, 'preparada']);
+  expect(query.mock.calls[1][1]).toEqual(['Body', 2, 'preparada', null]);
   expect(release).toHaveBeenCalledOnce();
 });
 test.each(['INSERT', 'COMMIT'])('fallada %s fa ROLLBACK i no retorna èxit', async (failure) => {
   const { repository, query, release } = setup(failure);
-  await expect(repository.createAtomically(input)).rejects.toThrow('SQL failure');
+  await expect(repository.createAtomically(input)).rejects.toThrow(failure === 'COMMIT' ? 'Resultat de persistència incert.' : 'SQL failure');
   expect(query.mock.calls.at(-1)?.[0]).toBe('ROLLBACK');
   expect(release).toHaveBeenCalledOnce();
 });
@@ -44,14 +45,31 @@ test('fallada BEGIN descarta connexió', async () => {
 test('fallada ROLLBACK conserva ambdós errors i descarta connexió', async () => {
   const { repository, release, persistenceError, rollbackError } = setup('INSERT', true);
   const error = await repository.createAtomically(input).catch((error: unknown) => error);
-  expect(error).toBeInstanceOf(AggregateError);
-  expect((error as AggregateError).errors).toHaveLength(2);
-  expect((error as AggregateError).errors[0]).toBe(persistenceError);
-  expect((error as AggregateError).errors[1]).toBe(rollbackError);
+  expect(error).toBeInstanceOf(ItemPersistenceUncertainError);
+  const aggregate = (error as ItemPersistenceUncertainError).cause as AggregateError;
+  expect(aggregate.errors).toHaveLength(2);
+  expect(aggregate.errors[0]).toBe(persistenceError);
+  expect(aggregate.errors[1]).toBe(rollbackError);
   expect(release.mock.calls[0][0]).toBeInstanceOf(Error);
 });
 test('fallada connect es propaga', async () => {
   const error = new Error('connection');
   const repository = new PostgresHomeItemsRepository({ connect: async () => { throw error; } } as unknown as Pool);
   await expect(repository.createAtomically(input)).rejects.toBe(error);
+});
+
+test('all rows receive the same server-generated photo reference', async () => {
+  const { repository, query } = setup();
+  const ref = 'items/12345678-1234-4123-8123-123456789abc.webp';
+  await repository.createAtomically(input, ref);
+  const inserts = query.mock.calls.filter(([sql]) => sql.includes('INSERT'));
+  expect(inserts).toHaveLength(3);
+  expect(inserts.every(([, values]) => values?.[3] === ref)).toBe(true);
+});
+test('lost COMMIT acknowledgement retains the cause and discards the connection', async () => {
+  const { repository, release, persistenceError } = setup('COMMIT');
+  const error = await repository.createAtomically(input).catch(error => error);
+  expect(error).toBeInstanceOf(ItemPersistenceUncertainError);
+  expect(error.cause).toBe(persistenceError);
+  expect(release.mock.calls[0][0]).toBe(persistenceError);
 });

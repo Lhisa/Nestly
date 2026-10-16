@@ -18,7 +18,7 @@ Límits: el navegador controla el text i els botons de beforeunload, necessita n
 
 ## Arrencada segura des del worktree
 
-Arrel: C:\Users\Mireia\.codex\worktrees\m1-3-items\Nestly. PostgreSQL existent ha d'estar disponible; no executar el launcher del checkout principal ni docker compose up des d'aquest worktree. No executar migracions.
+Arrel: <worktree-de-revisió>/Nestly. PostgreSQL existent ha d'estar disponible; no executar el launcher del checkout principal ni docker compose up des d'aquest worktree. No executar migracions.
 
 Prepara backend/.env.test local, ignorat per Git, amb DATABASE_URL exclusivament a nestly_test. Pots copiar la configuració de test existent del checkout principal després de comprovar-ne el destí; mai .env de development. No incloure credencials a documentació ni commits.
 

@@ -1,3 +1,4 @@
+import { ItemPhoto } from './ItemPhoto';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -6,7 +7,7 @@ import type { EffectiveFilters, ItemGroup, ItemUnitSummary } from './items-api';
 import { fetchCategories } from './classification-api';
 import type { Category } from './classification-api';
 import { canonicalItemsSearch, itemFilterQuery, provisionalItemFilters } from './items-url';
-import { getCreationContext, getInventoryContext, saveInventoryContext } from './inventory-context';
+import * as legacyContext from './inventory-context';
 import type { InventoryContext } from './inventory-context';
 import './items.css';
 
@@ -44,7 +45,7 @@ function GroupCard({ group, initial, remember, detail, createdIds, search }: { g
   const context = <p className="item-classification">{group.category.name} · {group.subcategory.name}</p>;
   if (group.total_units === 1) {
     const unit = group.units[0];
-    return <li className={`item-card${containsNew ? ' newly-created' : ''}`} data-created-group={containsNew || undefined}><h2><ItemDetailLink unit={unit} search={search} detail={detail} /></h2>{context}<p className="item-identifier">Item {unit.id}</p><Preparation state={unit.preparation_status} /></li>;
+    return <li className={`item-card${containsNew ? ' newly-created' : ''}`} data-created-group={containsNew || undefined}><h2><ItemDetailLink unit={unit} search={search} detail={detail} /></h2>{context}<ItemPhoto reference={unit.foto_ref} name={unit.name} /><p className="item-identifier">Item {unit.id}</p><Preparation state={unit.preparation_status} /></li>;
   }
   return <li className="item-card item-group-card" data-created-group={containsNew || undefined}><header className="item-group-heading"><div><h2>{group.name}</h2>{context}</div><p className="item-unit-count">{group.total_units} unitats</p></header>
     <ul className="preparation-counts" aria-label="Recomptes de preparació">
@@ -55,7 +56,7 @@ function GroupCard({ group, initial, remember, detail, createdIds, search }: { g
     <button className="group-toggle" aria-expanded={open} aria-controls={`units-${group.units[0].id}`} onClick={() => { const next = { open: !open, visible: open ? 5 : visible }; setOpen(next.open); setVisible(next.visible); remember(next); }}>
       <svg className="disclosure-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={open ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} /></svg>{open ? 'Plega' : 'Desplega'} {group.name}
     </button>
-    <div id={`units-${group.units[0].id}`} hidden={!open}>{open && <><ul className="group-units">{group.units.slice(0, visible).map((unit) => <li key={unit.id} className={createdIds.includes(unit.id) ? 'newly-created' : undefined}><h3><ItemDetailLink unit={unit} search={search} detail={detail} /></h3><p className="item-identifier">Item {unit.id}</p><Preparation state={unit.preparation_status} /></li>)}</ul>
+    <div id={`units-${group.units[0].id}`} hidden={!open}>{open && <><ul className="group-units">{group.units.slice(0, visible).map((unit) => <li key={unit.id} className={createdIds.includes(unit.id) ? 'newly-created' : undefined}><h3><ItemDetailLink unit={unit} search={search} detail={detail} /></h3><ItemPhoto reference={unit.foto_ref} name={unit.name} /><p className="item-identifier">Item {unit.id}</p><Preparation state={unit.preparation_status} /></li>)}</ul>
       {visible < group.units.length && <button onClick={() => { setVisible(visible + 5); remember({ open, visible: visible + 5 }); }}>Mostra'n més</button>}</>}
     </div>
   </li>;
@@ -76,7 +77,16 @@ function FilterFields({ value, onChange, categories, prefix }: { value: Effectiv
     </select></label></div>;
 }
 
-export function ItemsPage() {
+interface ItemsPageDependencies {
+  loadItems?: typeof fetchItems;
+  queryScope?: string;
+  context?: typeof legacyContext;
+}
+const itemsKey=(scope:string|undefined,query:string)=>scope?['items',scope,query]:['items',query];
+
+/** Defaults legacy preservats; el wrapper de productes injecta client i context separats. */
+export function ItemsPage({loadItems=fetchItems,queryScope,context=legacyContext}:ItemsPageDependencies={}) {
+  const {getCreationContext,getInventoryContext,saveInventoryContext}=context;
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -98,7 +108,7 @@ export function ItemsPage() {
   const filterQuery = itemFilterQuery(location.search);
   const activeFilterQuery = useRef(filterQuery);
   activeFilterQuery.current = filterQuery;
-  const query = useQuery({ queryKey: ['items', filterQuery], queryFn: async ({ signal }) => ({ filterQuery, response: await fetchItems(signal, filterQuery) }), retry: false });
+  const query = useQuery({ queryKey: itemsKey(queryScope,filterQuery), queryFn: async ({ signal }) => ({ filterQuery, response: await loadItems(signal, filterQuery) }), retry: false });
   const catalog = useQuery({ queryKey: ['categories'], queryFn: ({ signal }) => fetchCategories(signal), retry: false });
   const data = query.data?.filterQuery === filterQuery ? query.data.response : undefined;
   const effective = data?.filters ?? provisionalItemFilters(location.search);
@@ -107,13 +117,13 @@ export function ItemsPage() {
     const search = data ? canonicalItemsSearch(location.search, data.filters) : location.search;
     if (data && search !== location.search) {
       const canonicalQuery = itemFilterQuery(search);
-      queryClient.setQueryData(['items', canonicalQuery], { filterQuery: canonicalQuery, response: data });
+      queryClient.setQueryData(itemsKey(queryScope,canonicalQuery), { filterQuery: canonicalQuery, response: data });
     }
     if (search !== location.search || location.state?.createdCount !== undefined) {
       const state = { ...location.state, createdCount: undefined, inventoryVisitKey: visitKey };
       void navigate({ pathname: location.pathname, search, hash: location.hash }, { replace: true, state });
     }
-  }, [data, filterQuery, location.search, location.pathname, location.hash, location.state, navigate, queryClient, visitKey]);
+  }, [data, filterQuery, location.search, location.pathname, location.hash, location.state, navigate, queryClient, visitKey, queryScope]);
   useEffect(() => {
     if (!data || query.isFetching || scrolled.current) return;
     const target = creation ? root.current?.querySelector<HTMLElement>('[data-created-group]') : undefined;
