@@ -136,7 +136,7 @@ test('GET agrupat serialitza unitats, null i recomptes sense canviar el detall',
   expect(result.matched_count).toBe(2);
   expect(result.groups).toHaveLength(1);
   expect(result.groups[0].preparation_counts).toEqual({ prepared: 0, not_prepared: 1, unspecified: 1 });
-  expect(result.groups[0].units[0]).toEqual({ id: 28, name: 'Body blau', preparation_status: null, created_at: jsonItem.data_creacio });
+  expect(result.groups[0].units[0]).toEqual({ id: 28, name: 'Body blau', preparation_status: null, foto_ref: null, created_at: jsonItem.data_creacio });
   expect(await (await get('/27')).json()).toEqual({ item: jsonItem });
 });
 
@@ -186,4 +186,24 @@ test('POST espera la persistència completa abans de respondre 201', async () =>
   expect(answered).toBe(false);
   finish([item]);
   expect((await responsePromise).status).toBe(201);
+});
+
+
+test('M1.5 I1: detail can serialize a stored photo reference without changing JSON creation', async () => {
+  const deps = dependencies();
+  deps.reader.findById.mockResolvedValue({ ...item, foto_ref: 'items/shared.webp' });
+  const api = await start(deps);
+  const response = await api.get('/27');
+  expect(response.status).toBe(200);
+  expect((await response.json()).item.foto_ref).toBe('items/shared.webp');
+  const created = await api.post(body);
+  expect(created.status).toBe(201);
+  expect((await created.json()).items[0].foto_ref).toBeNull();
+});
+
+test('M1.5 I1: JSON creation still rejects client-supplied photo references', async () => {
+  const api = await start();
+  const response = await api.post({ ...body, foto_ref: 'items/client.webp' });
+  expect(response.status).toBe(400);
+  expect(api.deps.repository.createAtomically).not.toHaveBeenCalled();
 });

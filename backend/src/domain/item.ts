@@ -5,7 +5,7 @@ export interface Item {
   nom: string;
   subcategoria_id: number;
   estat_preparacio: PreparationState;
-  foto_ref: null;
+  foto_ref: string | null;
   data_entrada_casa: null;
   data_creacio: Date;
 }

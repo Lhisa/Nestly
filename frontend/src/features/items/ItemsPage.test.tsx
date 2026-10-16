@@ -9,7 +9,7 @@ import type { GroupedHomeItemsResponse, ItemGroup } from './items-api';
 import { canonicalItemsSearch, itemFilterQuery, provisionalItemFilters } from './items-url';
 
 const categories = [{ id: 1, nom: 'Roba', subcategories: [{ id: 2, nom: 'Bodies' }] }, { id: 3, nom: 'Descans', subcategories: [{ id: 4, nom: 'Mantes' }] }];
-const group = (count: number): ItemGroup => ({ key: 'opaque', name: 'Body', category: { id: 1, name: 'Roba' }, subcategory: { id: 2, name: 'Bodies' }, total_units: count, preparation_counts: { prepared: 0, not_prepared: 0, unspecified: count }, units: Array.from({ length: count }, (_, i) => ({ id: i + 1, name: `body ${i + 1}`, preparation_status: null, created_at: '2026-10-01T00:00:00.000Z' })) });
+const group = (count: number): ItemGroup => ({ key: 'opaque', name: 'Body', category: { id: 1, name: 'Roba' }, subcategory: { id: 2, name: 'Bodies' }, total_units: count, preparation_counts: { prepared: 0, not_prepared: 0, unspecified: count }, units: Array.from({ length: count }, (_, i) => ({ id: i + 1, name: `body ${i + 1}`, preparation_status: null, foto_ref: null, created_at: '2026-10-01T00:00:00.000Z' })) });
 const response = (count = 1): GroupedHomeItemsResponse => ({ filters: { categoria_id: null, subcategoria_id: null }, corrections: [], inventory_count: count, matched_count: count, groups: count ? [group(count)] : [] });
 const clients: QueryClient[] = [];
 const routers: ReturnType<typeof createMemoryRouter>[] = [];
@@ -185,4 +185,22 @@ test('càrrega i error no simulen buit; reintent conserva filtres', async () => 
   await user.click(screen.getByRole('button', { name: 'Torna-ho a provar' }));
   await screen.findByText('Item 1');
   expect(urls).toEqual(['/api/items?categoria_id=1', '/api/items?categoria_id=1']);
+});
+
+
+test('a group has no representative photo and expanded units keep distinct photos', async () => {
+  const value = response(2);
+  value.groups[0].units[0].foto_ref = 'items/12345678-1234-4123-8123-123456789abc.webp';
+  value.groups[0].units[1].foto_ref = 'items/87654321-1234-4123-8123-123456789abc.webp';
+  const { user } = mount(async () => Response.json(value));
+  await screen.findByText('2 unitats');
+  expect(screen.queryByRole('img')).toBeNull();
+  await user.click(screen.getByRole('button', { name: /Desplega/ }));
+  expect(screen.getByRole('img', { name: 'Fotografia de body 1' }).getAttribute('src')).not.toBe(screen.getByRole('img', { name: 'Fotografia de body 2' }).getAttribute('src'));
+});
+test('single item card shows its photograph', async () => {
+  const value = response(1);
+  value.groups[0].units[0].foto_ref = 'items/12345678-1234-4123-8123-123456789abc.webp';
+  mount(async () => Response.json(value));
+  expect((await screen.findByRole('img', { name: 'Fotografia de body 1' })).getAttribute('src')).toContain('/api/item-photos/');
 });

@@ -1,3 +1,4 @@
+import { ItemPersistenceUncertainError } from '../application/create-home-items.js';
 import type { Pool } from 'pg';
 import type { HomeItemsRepository } from '../application/create-home-items.js';
 import type { CreateHomeItemsInput, Item } from '../domain/item.js';
@@ -5,9 +6,10 @@ import type { CreateHomeItemsInput, Item } from '../domain/item.js';
 export class PostgresHomeItemsRepository implements HomeItemsRepository {
   constructor(private readonly pool: Pool) {}
 
-  async createAtomically(input: CreateHomeItemsInput): Promise<Item[]> {
+  async createAtomically(input: CreateHomeItemsInput, photoReference: string | null = null): Promise<Item[]> {
     const client = await this.pool.connect();
     let transactionStarted = false;
+    let commitSent = false;
     let releaseError: Error | undefined;
     try {
       await client.query('BEGIN');
@@ -16,11 +18,12 @@ export class PostgresHomeItemsRepository implements HomeItemsRepository {
       for (let index = 0; index < input.quantitat; index++) {
         const { rows } = await client.query<Item>(`
           INSERT INTO item (nom, subcategoria_id, estat_preparacio, foto_ref, data_entrada_casa)
-          VALUES ($1, $2, $3, NULL, NULL)
+          VALUES ($1, $2, $3, $4, NULL)
           RETURNING id, nom, subcategoria_id, estat_preparacio, foto_ref, data_entrada_casa, data_creacio
-        `, [input.nom, input.subcategoria_id, input.estat_preparacio]);
+        `, [input.nom, input.subcategoria_id, input.estat_preparacio, photoReference]);
         items.push(rows[0]);
       }
+      commitSent = true;
       await client.query('COMMIT');
       return items;
     } catch (error) {
@@ -29,10 +32,14 @@ export class PostgresHomeItemsRepository implements HomeItemsRepository {
           await client.query('ROLLBACK');
         } catch (rollbackError) {
           releaseError = rollbackError instanceof Error ? rollbackError : new Error('Ha fallat ROLLBACK');
-          throw new AggregateError([error, rollbackError], 'Han fallat la persistència i el ROLLBACK.');
+          throw new ItemPersistenceUncertainError(new AggregateError([error, rollbackError], 'Han fallat la persistència i el ROLLBACK.'));
         }
       } else {
         releaseError = error instanceof Error ? error : new Error('Ha fallat BEGIN');
+      }
+      if (commitSent) {
+        releaseError = error instanceof Error ? error : new Error("COMMIT incert");
+        throw new ItemPersistenceUncertainError(error);
       }
       throw error;
     } finally {

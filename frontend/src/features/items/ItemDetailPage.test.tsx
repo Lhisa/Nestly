@@ -9,7 +9,7 @@ import type { EffectiveFilters, ItemGroup } from './items-api';
 import { getCreationContext, getInventoryContext, saveCreationContext, saveInventoryContext } from './inventory-context';
 
 const catalog = [{ id: 1, nom: 'Roba', subcategories: [{ id: 2, nom: 'Bodies' }, { id: 5, nom: 'Pitets' }] }, { id: 3, nom: 'Descans', subcategories: [{ id: 4, nom: 'Mantes' }] }];
-const unit = (id: number) => ({ id, name: `body ${id}`, preparation_status: null, created_at: '2026-10-01T00:00:00.000Z' });
+const unit = (id: number) => ({ id, name: `body ${id}`, preparation_status: null, foto_ref: null, created_at: '2026-10-01T00:00:00.000Z' });
 const group = (count: number): ItemGroup => ({ key: 'stable-group', name: 'Body', category: { id: 1, name: 'Roba' }, subcategory: { id: 2, name: 'Bodies' }, total_units: count, preparation_counts: { prepared: 0, not_prepared: 0, unspecified: count }, units: Array.from({ length: count }, (_, index) => unit(index + 1)) });
 const detail = { id: 1, nom: 'body 1', subcategoria_id: 2, estat_preparacio: null, foto_ref: null, data_entrada_casa: null, data_creacio: '2026-10-01T00:00:00.000Z' };
 const inventory = (count = 1, filters: EffectiveFilters = { categoria_id: null, subcategoria_id: null }) => ({ groups: count ? [group(count)] : [], filters, corrections: [], inventory_count: count, matched_count: count });
@@ -226,4 +226,10 @@ test.each([
     await user.click(screen.getByRole('button', { name: 'Recuperar filtres anteriors' }));
     await waitFor(() => expect(router.state.location.search).toBe(previous));
   } else expect(screen.queryByRole('button', { name: 'Recuperar filtres anteriors' })).toBeNull();
+});
+
+
+test('individual detail displays its persisted photo safely', async () => {
+  mount('/items/1', async url => Response.json(url === '/api/items/1' ? { item: { ...detail, foto_ref: 'items/12345678-1234-4123-8123-123456789abc.webp' } } : inventory()));
+  expect((await screen.findByRole('img', { name: 'Fotografia de body 1' })).getAttribute('src')).toBe('/api/item-photos/12345678-1234-4123-8123-123456789abc');
 });
