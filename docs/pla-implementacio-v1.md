@@ -118,13 +118,16 @@ PostgreSQL ha quedat Exited (0), com inicialment. Les còpies de seguretat i la 
 
 ### 4.1. Resultat i abast funcional
 
-M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. M1.1 està aprovada i integrada a `main` mitjançant la [PR #1](https://github.com/Lhisa/Nestly/pull/1), amb merge commit `345cabf24e8bb280724e1d40d503f033ed39d2bb`. M1.2 està implementada i validada a `feature/m1-2-classificacio`, pendent de publicació i integració a `main` segons §4.4.1.
+**Actualització aprovada a M1.6:** el model definitiu és `products-v1`, integrat amb M1.5 a main (PR #6, commit `7152714a3fcebd8a142fd20214e075c19b481908`). La identitat explícita és `producte_id`; no es fusionen productes per nom/Subcategoria. Les decisions originals D1–D11 i l’estat històric de M1.2 es conserven com a context. M1.6 encara ha de completar el recorregut integrat i el reinici abans de l’acceptació humana. Guia operativa vigent: [arrencada local](./arrencada-local.md).
 
-M1 utilitza les Categories/Subcategories predefinides de M0. L’Item representa una unitat física, té nom validat segons RF-01a i exactament una Subcategoria; la Categoria s’obté a través d’aquesta relació. No es crea ITEM_LLISTA per a un Item incorporat directament a casa.
 
-El formulari exigeix nom segons RF-01a, Categoria i Subcategoria dependent seleccionades explícitament, quantitat obligatòria inicial 1 (enter 1–100) i preparació seleccionable, inicialment **No preparat**. Totes les unitats reben l’estat escollit segons l’excepció aprovada de RF-06; la recollida de Llista conserva la inicialització obligatòria a **no preparada**. **Pendent de classificar** és explícit, mai fallback automàtic. No es demana data d’entrada a casa: queda a NULL segons A07. No s’afegeix quantitat, Categoria ni grup persistent a Item; les migracions actuals permeten M1 sense canvis imprescindibles.
+M1 està complet quan l’Usuari pot registrar d’1 a 100 Items reals que ja té a casa en una operació atòmica, amb fotografia opcional compartida, consultar-los individualment i agrupats amb filtres de classificació, i comprovar que dades i fotografia persisteixen després de reiniciar els serveis. Es basa en CU-08/CU-09 i les decisions aprovades D1–D11, incorporades a requisits, domini, UI/UX i arquitectura. M1.1 està aprovada i integrada a `main` mitjançant la [PR #1](https://github.com/Lhisa/Nestly/pull/1), amb merge commit `345cabf24e8bb280724e1d40d503f033ed39d2bb`. L’evidència original de M1.2 es conserva al §4.4.1 com a historial, no com a estat actual de main.
 
-La consulta agrupa per mateixa Subcategoria i nom retallat als extrems, insensible a majúscules/minúscules, conservant el nom original sense normalitzar accents ni espais interiors. Cada grup mostra el total, capçalera visual neutra i unitats desplegables amb preparació, fotografia, ID i detall individuals. Pot reunir registres de moments diferents. S’ordena per màxima `data_creacio DESC`, amb màxim ID descendent en empat; les unitats per `data_creacio DESC, id DESC`.
+M1 utilitza les Categories/Subcategories predefinides de M0. L’Item representa una unitat física amb ID, preparació i dates individuals. Nom, Subcategoria i fotografia deriven del producte; la Categoria s’obté de la Subcategoria d’aquest producte. No es crea ITEM_LLISTA per a un Item incorporat directament a casa.
+
+El formulari comença en Crear producte nou: exigeix nom segons RF-01a i Categoria/Subcategoria dependent. També permet seleccionar explícitament un producte existent i heretar-ne nom i classificació. En tots dos casos exigeix quantitat inicial 1 (enter 1–100) i preparació seleccionable, inicialment **No preparat**. Totes les unitats reben l’estat escollit segons l’excepció aprovada de RF-06; la recollida de Llista conserva la inicialització obligatòria a **no preparada**. **Pendent de classificar** és explícit, mai fallback automàtic. No es demana data d’entrada a casa: queda a NULL segons A07. No s’afegeix quantitat ni Categoria a Item. M1.5 incorpora producte i producte_id mitjançant activació manual de l’esquema; els camps legacy es conserven temporalment sense ser la font activa de les lectures.
+
+La consulta agrupa exclusivament per `producte_id`. Dos productes amb el mateix nom i Subcategoria continuen separats; aquesta decisió substitueix l’agrupació textual original de M1.4. Cada grup mostra el total, capçalera neutra i unitats desplegables amb preparació, ID i detall individuals i fotografia compartida del producte. Pot reunir unitats de moments diferents. Els grups s’ordenen per `MAX(data_creacio) DESC, MAX(id) DESC`, amb màxims independents; les unitats per `data_creacio DESC, id DESC`. Els Items vinculats a item_llista comparteixen identitat de producte però queden exclosos de l’inventari de casa.
 
 Inclou filtres conjuntius de Categoria/Subcategoria, inicialment tots els Items de M1, amb neteja de Subcategoria incompatible en canviar Categoria. Distingeix buit i sense coincidències. No inclou cerca textual. Després de crear torna al llistat amb **S’han creat N Items**, diferenciant N del total acumulat; el grup queda accessible i, preferentment, desplegat. La consulta futura a casa també inclourà recollits de Llista; no es determina només per `data_entrada_casa IS NOT NULL`.
 
@@ -136,15 +139,15 @@ Quan s’incorporin Items en Llistes, el formulari adoptarà la selecció explí
 
 ### 4.3. Fotografia inclosa en M1
 
-La fotografia és opcional per a cada Item però el suport de fotografia és obligatori per completar M1. Inclou selecció, previsualització abans de crear, processament real, persistència al filesystem i visualització al llistat i al detall. Sense fotografia s’utilitza el placeholder definit a UI/UX.
+La fotografia és opcional per producte però el suport de fotografia és obligatori per completar M1. Inclou selecció, previsualització abans de crear, processament real, persistència al filesystem i visualització al llistat i al detall. Sense fotografia s’utilitza el placeholder definit a UI/UX.
 
-En una creació múltiple es processa una sola vegada i les N unitats comparteixen la referència, sense duplicar el fitxer. El llistat la mostra per unitat, no a la capçalera neutra del grup. Cap substitució o eliminació futura pot trencar altres referències: només es neteja un fitxer quan cap Item el referencia. Si falla persistència després del guardat, es reverteixen totes les insercions i s’intenta netejar el fitxer nou; una fallada de neteja es registra i pot deixar un orfe temporal, sense transacció ACID conjunta.
+Una única fotografia és propietat del producte i la comparteixen totes les unitats, també les antigues i les vinculades a llistes. Crear unitats sense fotografia nova conserva l’actual. La primera fotografia s’afegeix durant la creació d’unitats addicionals. Una substitució exigeix confirmació explícita i versió observada, revalidada transaccionalment; afecta tot el producte, sense crear unitats parcials en conflicte. El llistat la mostra per unitat, no a la capçalera neutra del grup.
 
-S’aplica A09 complet: màxim una fotografia, límit inicial configurable de 10 MB, validació per decodificació real, correcció d’orientació, preservació de proporcions, costat llarg màxim inicial de 1600 px sense ampliació i sortida WebP. No es conserva l’original.
+La compensació només pot retirar el fitxer nou propi de l’operació quan es demostra que no té referències a producte ni als camps legacy. Davant COMMIT incert o comprovació fallida, es conserva. La fotografia anterior no s’elimina automàticament. No hi ha transacció ACID conjunta entre filesystem i PostgreSQL.
 
-Sharp és la llibreria general; libheif-js decodifica les entrades HEIC/HEIF que Sharp no pugui decodificar de manera fiable i el resultat continua pel pipeline de Sharp. Aquesta responsabilitat queda a Infrastructure, sense exposar llibreries o detalls de decoding a Domain, Application o frontend. PostgreSQL conserva la referència relativa, no el binari ni una ruta absoluta.
+Formats admesos: JPEG, PNG i WebP, màxim 10.000.000 bytes. Sharp valida el contingut real, rebutja animacions, corregeix orientació, elimina metadades i genera WebP de màxim 1600 px sense ampliar imatges petites. PostgreSQL conserva una referència relativa, no el binari ni una ruta absoluta; l’arrel de fitxers és persistent i privada fora del repositori.
 
-Sharp i libheif-js s’incorporen quan es construeixi aquest pipeline real. Es manté el criteri d’actualització de dependències, especialment per seguretat. Es comproven els errors i la coordinació entre filesystem i persistència segons A09, sense inventar una transacció ACID conjunta.
+**Excepció explícita aprovada a M1.6:** HEIC/HEIF s’ajorna a I5 i no bloqueja el tancament de M1. No està implementat ni s’anuncia com a disponible. El criteri original d’A09 complet, amb descodificador HEIC/HEIF complementari, i la fotografia per operació queden com a context històric; l’acceptació actual utilitza fotografia compartida per producte i aquesta excepció. No s’implementa I5 a M1.6.
 
 ### 4.4. Increments de M1 i verificació
 
@@ -153,15 +156,17 @@ Sharp i libheif-js s’incorporen quan es construeixi aquest pipeline real. Es m
 | M1.1 — Documentació i contracte aprovats | D1–D11 incorporades i documentació revisada, aprovada i integrada a `main` mitjançant la PR #1. No acredita per si sola implementació de M1.2. |
 | M1.2 — Catàleg de classificació i selectors dependents | Depèn de M1.1. Consulta de dades reals, selecció explícita i neteja de Subcategoria incompatible; Pendent de classificar només per elecció. |
 | M1.3 — Creació múltiple i consulta individual sense fotografia | Depèn de M1.2. N IDs independents, nom vàlid, quantitat 1/100 acceptada i 0/101/decimals rebutjats, estat seleccionat, zero insercions parcials en fallada i accés individual. |
-| M1.4 — Agrupació, ordenació i filtres | Depèn de M1.3. Casos de majúscules i extrems, accents/espais interiors preservats, Subcategories separades, moments/estats diferents, desempat estable, filtres conjuntius, desplegat i distinció buit/sense coincidències. |
-| M1.5 — Fotografies opcionals i compartides | Depèn de M1.3; s’integra amb M1.4. Previsualització, pipeline A09 i HEIC/HEIF, un fitxer per operació, N referències vàlides, errors/compensació i protecció de referències compartides. |
+| M1.4 — Agrupació, ordenació i filtres | Va validar agrupació textual, ordenació, filtres i navegació contextual. M1.5 substitueix la identitat del grup per producte_id; en l’acceptació final els productes duplicats continuen separats. |
+| M1.5 — Fotografies opcionals i compartides | Integrada: products-v1, productes explícits, unitats independents i fotografia compartida amb confirmació i versió, errors i compensació. JPEG/PNG/WebP; HEIC/HEIF ajornat a I5 per excepció aprovada. |
 | M1.6 — Validació integrada i criteris d’acceptació | Depèn de M1.2–M1.5. Recorregut complet, errors i feedback, N creades diferenciades del total, consulta individual/agrupada i persistència de dades/fotos després del reinici. |
 
 Els passos es poden ajustar durant la implementació i inclouen les capes i proves necessàries per al seu recorregut. No són fases horitzontals per completar primer tot el backend o tot el frontend. Es pot obtenir primer un flux sense foto, però encara no és M1 complet.
 
 React Hook Form s’incorpora amb el formulari real. No es fixen aquí endpoints exhaustius, noms de classes, hooks, components, ports o abstraccions.
 
-### 4.4.1. Estat de M1.2
+### 4.4.1. Estat històric de M1.2
+
+Aquest apartat conserva l’evidència d’aquell increment; no descriu l’estat actual de main, que ja incorpora M1.5.
 
 M1.2 implementada i validada a la branca `feature/m1-2-classificacio`, pendent de publicació, revisió de la Pull Request i integració a `main`. Contracte, decisions, proves i passos manuals a [M1.2 — Classificació](./m1-2-classificacio.md). TypeScript i builds correctes; 4 proves backend, inclosa la integració de lectura amb PostgreSQL real a `nestly_test`, i 5 proves frontend superades. `nestly_dev` i `nestly_test` tenen les dues migracions M0 aplicades i el catàleg de 8 Categories i 41 Subcategories. API real i proxy Vite verificats; prova manual dels selectors superada i confirmada per la persona usuària. No s’ha iniciat M1.3.
 
@@ -169,17 +174,17 @@ M1.2 implementada i validada a la branca `feature/m1-2-classificacio`, pendent d
 ### 4.5. Flux d’acceptació de M1
 
 1. Arrencar Nestly i entrar per la Landing.
-2. Arribar al Dashboard i navegar a Items.
+2. Arribar a Inici (placeholder aprovat) i navegar a Items. M1.6 no desenvolupa cap dashboard.
 3. Consultar el llistat actual, amb estat buit quan no hi ha Items.
-4. Prémer l’acció d’afegir Item, introduir nom, seleccionar Categoria/Subcategoria, indicar quantitat 1–100 i preparació per registrar directament a casa.
+4. Crear un producte nou amb nom i Categoria/Subcategoria o seleccionar explícitament un d’existent; indicar quantitat 1–100 i preparació de les unitats noves.
 5. Adjuntar opcionalment una fotografia i veure’n la previsualització abans de crear.
-6. Crear N Items: frontend i backend validen, PostgreSQL persisteix totes les unitats o cap i, amb fotografia, A09 genera un únic fitxer compartit.
+6. Crear N Items: frontend i backend validen i PostgreSQL persisteix totes les unitats o cap. Amb fotografia nova, normalitzar un fitxer compartit pel producte; sense fotografia nova, heretar l’actual.
 7. Tornar al llistat amb **S’han creat N Items**, grup accessible i preferentment desplegat; diferenciar N del total si hi havia unitats anteriors.
-8. Comprovar agrupació, ordenació i filtres; consultar unitats amb preparació i fotografia pròpies, si n’hi ha, i accedir als detalls individuals.
-9. Tancar Nestly i tornar-lo a arrencar.
+8. Comprovar agrupació per producte, ordenació i filtres; consultar preparació individual i fotografia compartida, obrir el detall i tornar amb context. Verificar una substitució confirmada i un error representatiu amb conservació del formulari, sense repetir casos extrems ja coberts per proves.
+9. Amb autorització específica, aturar ordenadament i tornar a arrencar backend i frontend amb el mateix model, base i arrel fotogràfica; no repetir la migració.
 10. Tornar al llistat i al detall i comprovar que les dades i la fotografia continuen disponibles.
 
-La verificació inclou creació amb i sense foto i compatibilitat HEIC/HEIF. El reinici ha de demostrar persistència real a PostgreSQL i filesystem, no només estat en memòria o cache del frontend. Els Items personals es creen des de Nestly, no amb INSERT manuals.
+La verificació inclou creació amb i sense foto en formats admesos. HEIC/HEIF queda exclòs del tancament per l’excepció aprovada al §4.3. El reinici ha de demostrar persistència real a PostgreSQL i filesystem, no només estat en memòria o cache del frontend. Els Items personals es creen des de Nestly, no amb INSERT manuals. El tancament exigeix recorregut integrat i reinici verificats, cap defecte bloquejant i acceptació humana; M1 no es declara complet només perquè M1.5 estigui integrada.
 
 ### 4.6. Tests dins de M1
 

@@ -86,6 +86,6 @@ test('enviament pendent no permet duplicats ni una nova creació després de l�
   await waitFor(()=>expect(form.getAttribute('aria-busy')).toBe('true'));
   fireEvent.submit(form);await waitFor(()=>expect(posts()).toHaveLength(1));
   pending.resolve(Response.json({created_count:1,items:[{id:21,producte_id:8}]},{status:201}));
-  await screen.findByText('S’han creat 1 Items.');
+  await screen.findByText('S’ha creat 1 Item.');
   fireEvent.submit(form);expect(posts()).toHaveLength(1);
 });
