@@ -63,3 +63,16 @@ test('client de lectures rebutja DTO legacy sense fallback silenciós',async()=>
  vi.stubGlobal('fetch',vi.fn(async()=>Response.json({groups:[{key:'legacy-name'}]})));
  await expect(fetchProductInventory()).rejects.toThrow('incompatible');
 });
+
+
+test.each([
+ [1, 'S’ha creat 1 Item.'],
+ [2, 'S’han creat 2 Items.'],
+])('feedback de %s unitats creades, independent del total acumulat', async (count, message) => {
+ const {router} = mount('/items', async () => Response.json({groups:[group(7,6)],filters:{categoria_id:null,subcategoria_id:null},corrections:[],inventory_count:6,matched_count:6}));
+ await screen.findByRole('button',{name:'Desplega Body'});
+ await act(async () => { await router.navigate('/items',{state:{createdCount:count}}); });
+ expect(await screen.findByText(message)).toBeTruthy();
+ expect(screen.getByText('6 unitats')).toBeTruthy();
+ expect(screen.queryByText('S’han creat 6 Items.')).toBeNull();
+});

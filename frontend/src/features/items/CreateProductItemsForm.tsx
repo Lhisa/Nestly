@@ -62,7 +62,7 @@ export function CreateProductItemsForm({onCreated}:{onCreated?:(result:ProductCr
     <UnsavedChangesGuard dirty={isDirty||!!files.new||!!files.existing||!!productId||!!classification.categoryId} completed={completed}/>
     <form noValidate aria-label="Registrar Items per producte" aria-busy={mutation.isPending} onSubmit={submit}>
       <p ref={alert} tabIndex={-1} role={message?'alert':undefined} className={message?'general-error':undefined}>{message}</p>
-      {success!==null&&<p role="status" className="success-message">S’han creat {success} Items.</p>}
+      {success!==null&&<p role="status" className="success-message">{success === 1 ? 'S’ha creat 1 Item.' : `S’han creat ${success} Items.`}</p>}
       <section className="form-block"><h2>Què afegim a casa?</h2>
         <fieldset disabled={disabled}><legend>Identitat del producte</legend><div className="radio-pair">
           <label className="radio-card"><input type="radio" name="product-mode" checked={mode==='new'} onChange={()=>changeMode('new')}/>Crear un producte nou</label>
